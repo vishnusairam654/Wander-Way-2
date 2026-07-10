@@ -1,0 +1,6 @@
+{
+  "name": "WanderWay",
+  "description": "Premium AI-native travel planning platform for seamless, inspiring and collaborative journeys.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

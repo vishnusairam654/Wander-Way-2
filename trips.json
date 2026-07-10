@@ -1,0 +1,279 @@
+[
+  {
+    "title": "Hampi Heritage Trail",
+    "durationDays": 4,
+    "travelersCount": 2,
+    "estimatedBudget": 50000,
+    "days": [
+      {
+        "dayNumber": 1,
+        "title": "Arrival & Temple Trail",
+        "activities": [
+          {
+            "id": "act-1",
+            "time": "10:00 AM",
+            "title": "Virupaksha Temple Visit",
+            "description": "Explore the ancient, continuously worshiped temple dedicated to Lord Shiva, featuring towering gopurams and intricate carvings.",
+            "bestPart": "The 50-meter gopuram is the highest in Hampi and a masterpiece of Dravidian architecture.",
+            "cost": 500,
+            "rating": 4.8,
+            "category": "culture",
+            "isMustSee": true,
+            "votesUp": 4,
+            "votesDown": 0
+          },
+          {
+            "id": "act-2",
+            "time": "01:30 PM",
+            "title": "Lunch at Mango Tree",
+            "description": "Relaxed riverside dining offering traditional thalis and continental options in a laid-back setting.",
+            "bestPart": "Enjoying a traditional South Indian meal served on banana leaves under mango trees.",
+            "cost": 1200,
+            "category": "food",
+            "isMustSee": false,
+            "votesUp": 2,
+            "votesDown": 0
+          },
+          {
+            "id": "act-2b",
+            "time": "03:30 PM",
+            "title": "Coracle Ride on Tungabhadra",
+            "description": "Take a relaxing ride in a traditional circular boat across the river to reach the hippie island side.",
+            "bestPart": "Floating peacefully near massive granite boulders and lush plantations under a clear blue sky.",
+            "cost": 400,
+            "category": "activity",
+            "isMustSee": false,
+            "votesUp": 2,
+            "votesDown": 2
+          }
+        ]
+      },
+      {
+        "dayNumber": 2,
+        "title": "Royal Enclosure",
+        "activities": [
+          {
+            "id": "act-3",
+            "time": "09:00 AM",
+            "title": "Royal Enclosure Ruins",
+            "description": "The fortified royal center of the Vijayanagara Empire, with underground chambers and stepped tank architecture.",
+            "bestPart": "The Mahanavami Dibba and the stunning Stepped Tank are the architectural crown jewels.",
+            "cost": 300,
+            "rating": 4.6,
+            "category": "culture",
+            "isMustSee": true,
+            "votesUp": 3,
+            "votesDown": 0
+          },
+          {
+            "id": "act-4",
+            "time": "02:00 PM",
+            "title": "Elephant Stables",
+            "description": "An 11-domed structure that once housed the royal ceremonial elephants, known for its Indo-Islamic architecture.",
+            "bestPart": "The unique symmetrical 11 domes showcasing a blend of Hindu and Islamic design.",
+            "cost": 200,
+            "rating": 4.7,
+            "category": "culture",
+            "isMustSee": true,
+            "votesUp": 4,
+            "votesDown": 1
+          }
+        ]
+      },
+      {
+        "dayNumber": 3,
+        "title": "Anegundi & Riverside Exploration",
+        "activities": [
+          {
+            "id": "act-5",
+            "time": "09:30 AM",
+            "title": "Explore Anegundi Village",
+            "description": "Visit the ancient fortified village older than Hampi itself, nestled amongst green paddy fields.",
+            "bestPart": "Interacting with local weavers and checking out the local handicraft co-ops.",
+            "cost": 150,
+            "category": "culture",
+            "isMustSee": false,
+            "votesUp": 2,
+            "votesDown": 0
+          },
+          {
+            "id": "act-6",
+            "time": "01:00 PM",
+            "title": "Riverside Picnic Lunch",
+            "description": "Savor a home-cooked picnic near the ruins along the Tungabhadra River.",
+            "bestPart": "Surreal boulder landscapes surrounding your peaceful lunch spot.",
+            "cost": 600,
+            "category": "food",
+            "isMustSee": false,
+            "votesUp": 3,
+            "votesDown": 0
+          }
+        ]
+      },
+      {
+        "dayNumber": 4,
+        "title": "Sunset & Departure",
+        "activities": [
+          {
+            "id": "act-7",
+            "time": "05:00 AM",
+            "title": "Matanga Hill Sunrise Hike",
+            "description": "An early morning trek up the highest point in Hampi for an unparalleled 360-degree view of the ruins in golden hour light.",
+            "bestPart": "Watching the sun light up the ancient landscape and rivers.",
+            "cost": 0,
+            "rating": 4.9,
+            "category": "nature",
+            "isMustSee": true,
+            "votesUp": 5,
+            "votesDown": 0
+          },
+          {
+            "id": "act-8",
+            "time": "04:30 PM",
+            "title": "Hemakuta Hill Sunset Farewell",
+            "description": "Relax on the smooth sloping granite sheets of Hemakuta Hill, watching the sunset over ruins before departure.",
+            "bestPart": "The serene landscape glowing orange as the day ends.",
+            "cost": 0,
+            "rating": 4.8,
+            "category": "nature",
+            "isMustSee": true,
+            "votesUp": 4,
+            "votesDown": 0
+          }
+        ]
+      }
+    ],
+    "id": "hampi-heritage-trail",
+    "destination": "Hampi",
+    "tripType": "Heritage",
+    "createdAt": "2026-07-09T16:45:09.703Z",
+    "budgetRange": "mid-range",
+    "travelStyle": "cultural",
+    "interests": [
+      "historical",
+      "hiking"
+    ],
+    "collaborators": [
+      {
+        "email": "arjun@wanderway.com",
+        "name": "Arjun",
+        "avatar": "https://lh3.googleusercontent.com/aida-public/AB6AXuAsWvNhsNQ6US77s4jK5Cww7lCxGGBh0PXH5e5pRWCugsL91W3xmmtk-oNWPEwW1wL2Fw0jCRkYgP6QG2bZRoU0V2eYDoOm6BxAfK9ggFhf8R6niTFyBKXkxsXxwdYF3iHOJ4uR3gzeDWA4BDMhhFbcfAh2VXhb2Vk5GMTTRc3DMhmR2Z6HOiiE34qVw3xK08zGRMkjPupnxO45mHzO0zJN-l-HnDbOt0yQlwdQSAZMEyGgE3KA9H4nEZHewrsYYB4UaQSnnyS8RW0"
+      },
+      {
+        "email": "priya@wanderway.com",
+        "name": "Priya",
+        "avatar": "https://lh3.googleusercontent.com/aida-public/AB6AXuAcfS_4_4reic5olAkwrcQgm_gou82PxPpZdhMlzTL09lj4yKltsyGy7b11h3eYvrdZbS_D6WZs3BbQoPldj5rvzLjRPxrSaQ_5_6AIHXkrikkwJG8abivE4fy8_qEqMRnO0rmAf0328IguivSEVTIxXSiIyAiR3N5mqZRHnEClXNls2Ki-Uv0ow2UcsL5w2JgRfQD1QSuExdOUuWMQwbl_dCq_1lCjQbqQrKNGw54fw584KLYyAtflcTeQ2G47Ca0qypaO09uK6Gk"
+      },
+      {
+        "email": "rahul@wanderway.com",
+        "name": "Rahul",
+        "avatar": "https://lh3.googleusercontent.com/aida-public/AB6AXuDOO8RuFixchq-NGjjGwhna7f4LaydVEitLLnUReOS8PRSmjxay00B1LwItH83cknaGmw_qqxqh4TVNlxcebvrx6eUZ138s7c3c5IKipo_li8eK69YszVQSwUOhU_4nemO9OIdFsZzt0fqvXV5rYNDmyCcGU5YbPdPrlPXUVdvT_TeGKBzGSffzoAYMEUW7ctb7ZD215SqU-YYAqqO-grAhuycz5qs6gGYdZEyOnziUzNc1stuo0Z4waKBp0YVWHEc3lqvFVhkChj4"
+      },
+      {
+        "email": "sarah@wanderway.com",
+        "name": "Sarah",
+        "avatar": "https://lh3.googleusercontent.com/aida-public/AB6AXuA5UdnblaxoTTzPdTucQv-2L-i_6u1QCOkcDrj2RU0q73YOuqikq_9_w_lCayfcm303TaIWhKIxhKwxpWanqaD779R1nHZM3gHwpz8q81VmJYMXwmsB0MRJOkC_d_d6bBtHewxFtamhrWJ3JFtMKbeUWkYeVyfDpK2oWSooH6RKWLndKh3Q0jlB-oZOnMQcErv2HcBOjiEczLLPS2jTlEYPb7Q2dU4cagVeMRMqCEiongIQy_b73rhcKpgXCnMULH3UapWON1DL2lo"
+      }
+    ],
+    "comments": [
+      {
+        "id": "c-1",
+        "author": "Priya",
+        "avatar": "https://lh3.googleusercontent.com/aida-public/AB6AXuAcfS_4_4reic5olAkwrcQgm_gou82PxPpZdhMlzTL09lj4yKltsyGy7b11h3eYvrdZbS_D6WZs3BbQoPldj5rvzLjRPxrSaQ_5_6AIHXkrikkwJG8abivE4fy8_qEqMRnO0rmAf0328IguivSEVTIxXSiIyAiR3N5mqZRHnEClXNls2Ki-Uv0ow2UcsL5w2JgRfQD1QSuExdOUuWMQwbl_dCq_1lCjQbqQrKNGw54fw584KLYyAtflcTeQ2G47Ca0qypaO09uK6Gk",
+        "content": "The coracle ride on Tungabhadra looks amazing! Let's definitely do it.",
+        "timestamp": "2 hours ago"
+      },
+      {
+        "id": "c-2",
+        "author": "Rahul",
+        "avatar": "https://lh3.googleusercontent.com/aida-public/AB6AXuDOO8RuFixchq-NGjjGwhna7f4LaydVEitLLnUReOS8PRSmjxay00B1LwItH83cknaGmw_qqxqh4TVNlxcebvrx6eUZ138s7c3c5IKipo_li8eK69YszVQSwUOhU_4nemO9OIdFsZzt0fqvXV5rYNDmyCcGU5YbPdPrlPXUVdvT_TeGKBzGSffzoAYMEUW7ctb7ZD215SqU-YYAqqO-grAhuycz5qs6gGYdZEyOnziUzNc1stuo0Z4waKBp0YVWHEc3lqvFVhkChj4",
+        "content": "Can we add more food stops? I heard Mango Tree has amazing filter coffee.",
+        "timestamp": "1 hour ago"
+      }
+    ]
+  },
+  {
+    "id": "goa-getaway",
+    "title": "Goa Getaway",
+    "destination": "Goa",
+    "tripType": "Beach",
+    "durationDays": 7,
+    "travelersCount": 4,
+    "estimatedBudget": 35000,
+    "createdAt": "2026-07-04T16:45:09.703Z",
+    "budgetRange": "mid-range",
+    "travelStyle": "relaxation",
+    "interests": [
+      "foodie",
+      "shopping"
+    ],
+    "collaborators": [
+      {
+        "email": "arjun@wanderway.com",
+        "name": "Arjun",
+        "avatar": "https://lh3.googleusercontent.com/aida-public/AB6AXuAsWvNhsNQ6US77s4jK5Cww7lCxGGBh0PXH5e5pRWCugsL91W3xmmtk-oNWPEwW1wL2Fw0jCRkYgP6QG2bZRoU0V2eYDoOm6BxAfK9ggFhf8R6niTFyBKXkxsXxwdYF3iHOJ4uR3gzeDWA4BDMhhFbcfAh2VXhb2Vk5GMTTRc3DMhmR2Z6HOiiE34qVw3xK08zGRMkjPupnxO45mHzO0zJN-l-HnDbOt0yQlwdQSAZMEyGgE3KA9H4nEZHewrsYYB4UaQSnnyS8RW0"
+      },
+      {
+        "email": "priya@wanderway.com",
+        "name": "Priya",
+        "avatar": "https://lh3.googleusercontent.com/aida-public/AB6AXuAcfS_4_4reic5olAkwrcQgm_gou82PxPpZdhMlzTL09lj4yKltsyGy7b11h3eYvrdZbS_D6WZs3BbQoPldj5rvzLjRPxrSaQ_5_6AIHXkrikkwJG8abivE4fy8_qEqMRnO0rmAf0328IguivSEVTIxXSiIyAiR3N5mqZRHnEClXNls2Ki-Uv0ow2UcsL5w2JgRfQD1QSuExdOUuWMQwbl_dCq_1lCjQbqQrKNGw54fw584KLYyAtflcTeQ2G47Ca0qypaO09uK6Gk"
+      }
+    ],
+    "comments": [],
+    "days": []
+  },
+  {
+    "id": "swiss-alps-adventure",
+    "title": "Swiss Alps Adventure",
+    "destination": "Swiss Alps",
+    "tripType": "Adventure",
+    "durationDays": 10,
+    "travelersCount": 1,
+    "estimatedBudget": 150000,
+    "createdAt": "2026-06-29T16:45:09.703Z",
+    "budgetRange": "luxury",
+    "travelStyle": "adventure",
+    "interests": [
+      "hiking"
+    ],
+    "collaborators": [
+      {
+        "email": "sarah@wanderway.com",
+        "name": "Sarah",
+        "avatar": "https://lh3.googleusercontent.com/aida-public/AB6AXuA5UdnblaxoTTzPdTucQv-2L-i_6u1QCOkcDrj2RU0q73YOuqikq_9_w_lCayfcm303TaIWhKIxhKwxpWanqaD779R1nHZM3gHwpz8q81VmJYMXwmsB0MRJOkC_d_d6bBtHewxFtamhrWJ3JFtMKbeUWkYeVyfDpK2oWSooH6RKWLndKh3Q0jlB-oZOnMQcErv2HcBOjiEczLLPS2jTlEYPb7Q2dU4cagVeMRMqCEiongIQy_b73rhcKpgXCnMULH3UapWON1DL2lo"
+      }
+    ],
+    "comments": [],
+    "days": []
+  },
+  {
+    "id": "kyoto-cherry-blossoms",
+    "title": "Kyoto Cherry Blossoms",
+    "destination": "Kyoto",
+    "tripType": "Cultural",
+    "durationDays": 8,
+    "travelersCount": 2,
+    "estimatedBudget": 95000,
+    "createdAt": "2026-06-24T16:45:09.703Z",
+    "budgetRange": "luxury",
+    "travelStyle": "cultural",
+    "interests": [
+      "museums",
+      "foodie"
+    ],
+    "collaborators": [
+      {
+        "email": "arjun@wanderway.com",
+        "name": "Arjun",
+        "avatar": "https://lh3.googleusercontent.com/aida-public/AB6AXuAsWvNhsNQ6US77s4jK5Cww7lCxGGBh0PXH5e5pRWCugsL91W3xmmtk-oNWPEwW1wL2Fw0jCRkYgP6QG2bZRoU0V2eYDoOm6BxAfK9ggFhf8R6niTFyBKXkxsXxwdYF3iHOJ4uR3gzeDWA4BDMhhFbcfAh2VXhb2Vk5GMTTRc3DMhmR2Z6HOiiE34qVw3xK08zGRMkjPupnxO45mHzO0zJN-l-HnDbOt0yQlwdQSAZMEyGgE3KA9H4nEZHewrsYYB4UaQSnnyS8RW0"
+      },
+      {
+        "email": "sarah@wanderway.com",
+        "name": "Sarah",
+        "avatar": "https://lh3.googleusercontent.com/aida-public/AB6AXuA5UdnblaxoTTzPdTucQv-2L-i_6u1QCOkcDrj2RU0q73YOuqikq_9_w_lCayfcm303TaIWhKIxhKwxpWanqaD779R1nHZM3gHwpz8q81VmJYMXwmsB0MRJOkC_d_d6bBtHewxFtamhrWJ3JFtMKbeUWkYeVyfDpK2oWSooH6RKWLndKh3Q0jlB-oZOnMQcErv2HcBOjiEczLLPS2jTlEYPb7Q2dU4cagVeMRMqCEiongIQy_b73rhcKpgXCnMULH3UapWON1DL2lo"
+      }
+    ],
+    "comments": [],
+    "days": []
+  }
+]

@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", "Inter", sans-serif;
+  --font-cursive: "Caveat", cursive;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.5; }
+  50% { transform: scale(1.1); opacity: 0.3; }
+  100% { transform: scale(0.95); opacity: 0.5; }
+}
+
+.pulse-ring {
+  animation: pulse-ring 3s infinite ease-in-out;
+}
+
+/* Scrollbar styling */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@media print {
+  html, body, #root {
+    background: white !important;
+    color: black !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  /* Hide interactive nav panels and sidebars */
+  aside, 
+  nav, 
+  #sidebar-container, 
+  #ask-ai-floating-btn,
+  header {
+    display: none !important;
+  }
+
+  /* Reset main container left padding on print */
+  .md\:pl-64,
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    min-width: 100% !important;
+    width: 100% !important;
+  }
+}
+
