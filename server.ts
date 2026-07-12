@@ -362,7 +362,9 @@ async function startServer() {
   app.set("trust proxy", 1);
   const cspDirectives = {
     defaultSrc: ["'self'"],
-    scriptSrc: ["'self'", "https://unpkg.com"],
+    scriptSrc: ["'self'", "https://unpkg.com", "https://apis.google.com", "https://www.gstatic.com", "https://*.firebaseapp.com"],
+    scriptSrcElem: ["'self'", "https://unpkg.com", "https://apis.google.com", "https://www.gstatic.com", "https://*.firebaseapp.com"],
+    frameSrc: ["'self'", "https://*.firebaseapp.com", "https://apis.google.com"],
     styleSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com", "https://fonts.googleapis.com"],
     fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
     imgSrc: ["'self'", "data:", "blob:", "https://*.tile.openstreetmap.org", "https://lh3.googleusercontent.com"],
@@ -387,8 +389,8 @@ async function startServer() {
           ? {
               directives: {
                 ...cspDirectives,
-                scriptSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com"],
-                scriptSrcElem: ["'self'", "'unsafe-inline'", "https://unpkg.com"],
+                scriptSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com", "https://apis.google.com", "https://www.gstatic.com", "https://*.firebaseapp.com"],
+                scriptSrcElem: ["'self'", "'unsafe-inline'", "https://unpkg.com", "https://apis.google.com", "https://www.gstatic.com", "https://*.firebaseapp.com"],
                 connectSrc: [
                   ...cspDirectives.connectSrc,
                   "http://localhost:*",

@@ -3,9 +3,31 @@
 @import "tailwindcss";
 
 @theme {
+  --color-brand-terracotta: #E2703A;
+  --color-brand-terracotta-dark: #C15A2C;
+  --color-brand-teal: #1C6E76;
+  --color-brand-teal-tint: #E3F1F1;
+  --color-brand-amber: #F0A93E;
+  
+  --color-bg-cream: #FBF5EC;
+  --color-text-ink: #2A211B;
+  --color-text-muted: #7D7167;
+  --color-border-subtle: #E9DFD1;
+  
+  --color-status-success: #4E9A6C;
+  --color-status-warning: #D99A2B;
+  --color-status-danger: #C1503F;
+
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Plus Jakarta Sans", "Inter", sans-serif;
   --font-cursive: "Caveat", cursive;
+}
+
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 0.25s;
+  animation-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 @keyframes pulse-ring {

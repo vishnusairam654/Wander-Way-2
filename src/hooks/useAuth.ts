@@ -20,6 +20,7 @@ export function useAuth() {
   const [user, setUser] = useState<AppUser | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<Error | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -90,6 +91,7 @@ export function useAuth() {
     user,
     firebaseUser,
     loading,
+    authError,
     signInWithGoogle,
     loginWithEmail,
     signupWithEmail,

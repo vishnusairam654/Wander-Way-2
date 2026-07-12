@@ -1,5 +1,5 @@
 import React from "react";
-import { Compass } from "lucide-react";
+import ingoudeLogo from "@/assets/Ingoude.png";
 
 interface LogoProps {
   className?: string;
@@ -9,15 +9,12 @@ interface LogoProps {
 
 export function WanderWayIcon({ className = "", size = 48 }: { className?: string; size?: number }) {
   return (
-    <div 
-      className={`relative rounded-2xl flex items-center justify-center bg-gradient-to-tr from-[#3B7A57] to-[#4FA8E0] shadow-md shadow-emerald-100 overflow-hidden ${className}`}
+    <img 
+      src={ingoudeLogo} 
+      alt="WanderWay Logo" 
+      className={`rounded-2xl object-contain ${className}`}
       style={{ width: size, height: size }}
-    >
-      <Compass 
-        className="text-white animate-[spin_10s_linear_infinite]" 
-        style={{ width: size * 0.55, height: size * 0.55 }} 
-      />
-    </div>
+    />
   );
 }
 
@@ -33,7 +30,7 @@ export default function WanderWayLogo({ className = "", size = 80, showText = tr
           <span className="font-display text-4xl font-black tracking-tight text-slate-900">
             Wander
           </span>
-          <span className="font-display text-4xl font-black tracking-tight bg-gradient-to-r from-[#3B7A57] to-[#4FA8E0] bg-clip-text text-transparent">
+          <span className="font-display text-4xl font-black tracking-tight text-yellow-400">
             Way
           </span>
         </div>
