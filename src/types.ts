@@ -43,15 +43,28 @@ export interface TravelDocument {
   id: string;
   name: string;
   category: "boarding-pass" | "hotel" | "ticket" | "id" | "other";
-  size: string;
+  size: number;
   uploadedBy: string;
   uploadedAt: string;
-  content: string;
+  storageKey: string;
+  content?: string;
+}
+
+export interface AIPackingItem {
+  name: string;
+  category: "Clothing" | "Essentials" | "Activity-Specific" | "Other";
+  reason: string;
+}
+
+export interface AIDocument {
+  name: string;
+  reason: string;
 }
 
 export interface Itinerary {
   id?: string;
   title: string;
+  originLocation?: string;
   destination?: string;
   tripType?: string;
   createdAt?: string;
@@ -61,10 +74,13 @@ export interface Itinerary {
   days: DayPlan[];
   budgetRange?: string;
   travelStyle?: string;
+  travelMode?: string;
   interests?: string[];
   collaborators?: Collaborator[];
   comments?: Comment[];
   documents?: TravelDocument[];
+  packingList?: AIPackingItem[];
+  documentsList?: AIDocument[];
 }
 
 export interface PackingItem {

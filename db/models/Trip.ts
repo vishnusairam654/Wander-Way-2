@@ -45,12 +45,14 @@ export interface IDocument {
   size: number;
   uploadedBy: string;
   uploadedAt: string;
-  content: string;
+  storageKey: string;
+  content?: string;
 }
 
 export interface ITrip extends Document {
-  id: string; // The application-level ID used by the client (e.g. "trip-123", "hampi-heritage-trail")
+  id: string; // The application-level ID used by the client (e.g. "trip-123")
   title: string;
+  originLocation?: string;
   destination: string;
   tripType: string;
   durationDays: number;
@@ -59,6 +61,7 @@ export interface ITrip extends Document {
   createdAt: string;
   budgetRange: string;
   travelStyle: string;
+  travelMode?: string;
   interests: string[];
   days: ITripDay[];
   collaborators: ICollaborator[];
@@ -74,8 +77,8 @@ const tripActivitySchema = new Schema<ITripActivity>({
   bestPart: { type: String, required: true },
   cost: { type: Number, required: true },
   rating: { type: Number },
-  category: { 
-    type: String, 
+  category: {
+    type: String,
     required: true,
     enum: ["culture", "food", "nature", "activity", "general"]
   },
@@ -115,12 +118,14 @@ const documentSchema = new Schema<IDocument>({
   size: { type: Number, required: true },
   uploadedBy: { type: String, required: true },
   uploadedAt: { type: String, required: true },
-  content: { type: String, required: true }
+  storageKey: { type: String, required: true },
+  content: { type: String, required: false }
 });
 
 const tripSchema = new Schema<ITrip>({
   id: { type: String, required: true, unique: true },
   title: { type: String, required: true },
+  originLocation: { type: String },
   destination: { type: String, required: true },
   tripType: { type: String, required: true },
   durationDays: { type: Number, required: true },
@@ -129,6 +134,7 @@ const tripSchema = new Schema<ITrip>({
   createdAt: { type: String, required: true },
   budgetRange: { type: String, required: true },
   travelStyle: { type: String, required: true },
+  travelMode: { type: String },
   interests: [{ type: String }],
   days: [tripDaySchema],
   collaborators: [collaboratorSchema],

@@ -23,6 +23,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ currentTab, setCurrentTab, onNewTripClick, currentUser, onSignOut }: SidebarProps) {
+  const currentYear = new Date().getFullYear();
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: Home },
     { id: "planner", label: "AI Planner", icon: Compass },
@@ -31,7 +32,6 @@ export default function Sidebar({ currentTab, setCurrentTab, onNewTripClick, cur
     { id: "documents", label: "Documents", icon: FolderOpen },
     { id: "packing", label: "Packing List", icon: Luggage },
     { id: "expenses", label: "Expenses", icon: Receipt },
-    { id: "flashback", label: "2023 Wrapped", icon: History },
   ];
 
   return (

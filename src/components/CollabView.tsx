@@ -11,19 +11,19 @@ interface CollabViewProps {
   onInvite: (email: string) => void;
 }
 
-export default function CollabView({ 
-  currentUser, 
-  activeItinerary, 
-  onlineUsers, 
-  onVote, 
-  onComment, 
-  onInvite 
+export default function CollabView({
+  currentUser,
+  activeItinerary,
+  onlineUsers,
+  onVote,
+  onComment,
+  onInvite
 }: CollabViewProps) {
   const [copied, setCopied] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [commentText, setCommentText] = useState("");
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
-  
+
   const commentsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,7 +52,7 @@ export default function CollabView({
     setCommentText("");
   };
 
-  const currentTripName = activeItinerary?.title || "Hampi Heritage Trail";
+  const currentTripName = activeItinerary?.title || "Untitled Trip";
   const collaborators = activeItinerary?.collaborators || [];
   const comments = activeItinerary?.comments || [];
   const firstDay = activeItinerary?.days?.[0];
@@ -60,7 +60,7 @@ export default function CollabView({
 
   return (
     <div id="collab-screen" className="space-y-8 animate-fade-in">
-      
+
       {/* Page Header */}
       <div>
         <h1 className="font-display text-2xl font-bold text-slate-900">
@@ -78,17 +78,16 @@ export default function CollabView({
             Public Invitation Link
           </span>
           <div className="flex items-center gap-2">
-            <input 
-              type="text" 
-              readOnly 
-              value={`${window.location.origin}/join/${activeItinerary?.id || "hampi"}`} 
+            <input
+              type="text"
+              readOnly
+              value={`${window.location.origin}/join/${activeItinerary?.id || "trip"}`}
               className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-mono text-slate-500 w-72 outline-none select-all truncate"
             />
             <button
               onClick={handleCopyLink}
-              className={`p-2.5 rounded-xl border border-slate-200 flex items-center justify-center transition-colors cursor-pointer ${
-                copied ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-white text-slate-500 hover:bg-slate-50"
-              }`}
+              className={`p-2.5 rounded-xl border border-slate-200 flex items-center justify-center transition-colors cursor-pointer ${copied ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-white text-slate-500 hover:bg-slate-50"
+                }`}
               title="Copy link"
             >
               {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Link className="w-4 h-4" />}
@@ -104,11 +103,11 @@ export default function CollabView({
             </span>
             <div className="flex -space-x-2 mt-1.5">
               {collaborators.map((c, idx) => (
-                <img 
-                  key={c.email + idx} 
-                  src={c.avatar} 
-                  alt={c.name} 
-                  className="w-8 h-8 rounded-full border-2 border-white object-cover shadow-sm" 
+                <img
+                  key={c.email + idx}
+                  src={c.avatar}
+                  alt={c.name}
+                  className="w-8 h-8 rounded-full border-2 border-white object-cover shadow-sm"
                   title={`${c.name} (${c.email})`}
                 />
               ))}
@@ -131,10 +130,10 @@ export default function CollabView({
 
       {/* Main Board Structure */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Left Columns: Interactive Itinerary Voting and Invite */}
         <div className="lg:col-span-2 space-y-6">
-          
+
           {/* Invite Form */}
           <div className="bg-white rounded-[24px] border border-slate-200 p-6 shadow-sm">
             <h3 className="font-display font-bold text-sm text-slate-900 mb-4 flex items-center gap-2">
@@ -144,7 +143,7 @@ export default function CollabView({
             <form onSubmit={handleSendInvite} className="flex gap-2">
               <div className="relative flex-1">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                <input 
+                <input
                   type="email"
                   required
                   value={inviteEmail}
@@ -186,7 +185,7 @@ export default function CollabView({
                   const votesDown = act.votesDown || 0;
                   const totalVotes = votesUp + votesDown;
                   const yesPercent = totalVotes > 0 ? Math.round((votesUp / totalVotes) * 100) : 0;
-                  
+
                   // Detect user's current vote
                   const userVote = act.userVotes?.[currentUser.email] || null;
 
@@ -211,9 +210,8 @@ export default function CollabView({
                         </div>
 
                         <div className="flex-shrink-0 text-right">
-                          <span className={`text-[10px] font-sans font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
-                            yesPercent >= 70 ? "text-emerald-600 bg-emerald-50" : "text-slate-500 bg-slate-50"
-                          }`}>
+                          <span className={`text-[10px] font-sans font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${yesPercent >= 70 ? "text-emerald-600 bg-emerald-50" : "text-slate-500 bg-slate-50"
+                            }`}>
                             {yesPercent >= 70 ? "High Consent" : "Under Debate"}
                           </span>
                         </div>
@@ -226,8 +224,8 @@ export default function CollabView({
                           <span className="text-[#3ACBB8] font-bold font-display">{yesPercent}% Agreement</span>
                         </div>
                         <div className="h-2 bg-slate-100 rounded-full overflow-hidden flex">
-                          <div 
-                            className="h-full bg-gradient-to-r from-[#4FA8E0] to-[#3ACBB8] transition-all duration-300" 
+                          <div
+                            className="h-full bg-gradient-to-r from-[#4FA8E0] to-[#3ACBB8] transition-all duration-300"
                             style={{ width: `${yesPercent}%` }}
                           ></div>
                         </div>
@@ -241,11 +239,10 @@ export default function CollabView({
                       <div className="flex gap-2 pt-1">
                         <button
                           onClick={() => onVote(firstDay.dayNumber, act.id, "up")}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border cursor-pointer transition-all ${
-                            userVote === "up"
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border cursor-pointer transition-all ${userVote === "up"
                               ? "bg-emerald-50 text-emerald-600 border-emerald-200"
                               : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
-                          }`}
+                            }`}
                         >
                           <ThumbsUp className="w-3.5 h-3.5" />
                           <span>{userVote === "up" ? "Supported" : "Support"}</span>
@@ -253,11 +250,10 @@ export default function CollabView({
 
                         <button
                           onClick={() => onVote(firstDay.dayNumber, act.id, "down")}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border cursor-pointer transition-all ${
-                            userVote === "down"
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border cursor-pointer transition-all ${userVote === "down"
                               ? "bg-red-50 text-red-500 border-red-200"
                               : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
-                          }`}
+                            }`}
                         >
                           <ThumbsDown className="w-3.5 h-3.5" />
                           <span>{userVote === "down" ? "Objected" : "Object"}</span>
@@ -298,9 +294,9 @@ export default function CollabView({
               ) : (
                 comments.map((comment) => (
                   <div key={comment.id} className="flex gap-2.5 items-start text-xs font-sans">
-                    <img 
-                      src={comment.avatar} 
-                      alt={comment.author} 
+                    <img
+                      src={comment.avatar}
+                      alt={comment.author}
                       className="w-8 h-8 rounded-full object-cover border border-slate-200 flex-shrink-0"
                     />
                     <div className="flex-1 min-w-0">
@@ -320,7 +316,7 @@ export default function CollabView({
 
             {/* Message input bar */}
             <form onSubmit={handleSendComment} className="mt-4 pt-3 border-t border-slate-100 flex gap-2">
-              <input 
+              <input
                 type="text"
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}

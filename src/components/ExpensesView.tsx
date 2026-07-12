@@ -9,11 +9,24 @@ interface ExpensesViewProps {
 }
 
 export default function ExpensesView({ itinerary }: ExpensesViewProps) {
-  const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES);
-  const [settlements, setSettlements] = useState<Settlement[]>(INITIAL_SETTLEMENTS);
+  if (!itinerary?.id) {
+    return null;
+  }
+
+  const tripId = itinerary.id;
+  const estimatedBudget = itinerary.estimatedBudget || 25000;
+
+  const [expenses, setExpenses] = useState<Expense[]>(() => {
+    const saved = localStorage.getItem(`wanderway_expenses_${tripId}`);
+    return saved ? JSON.parse(saved) : INITIAL_EXPENSES;
+  });
+  const [settlements, setSettlements] = useState<Settlement[]>(() => {
+    const saved = localStorage.getItem(`wanderway_settlements_${tripId}`);
+    return saved ? JSON.parse(saved) : INITIAL_SETTLEMENTS;
+  });
 
   // Currency Converter State
-  const [homeCurrency, setHomeCurrency] = useState<string>("USD");
+  const [homeCurrency, setHomeCurrency] = useState<string>(() => localStorage.getItem(`wanderway_home_currency_${tripId}`) || "USD");
   const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({
     INR: 1.0,
     USD: 0.012,
@@ -25,6 +38,28 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
     JPY: 1.85,
   });
   const [ratesLoading, setRatesLoading] = useState(false);
+
+  useEffect(() => {
+    const savedExpenses = localStorage.getItem(`wanderway_expenses_${tripId}`);
+    setExpenses(savedExpenses ? JSON.parse(savedExpenses) : INITIAL_EXPENSES);
+
+    const savedSettlements = localStorage.getItem(`wanderway_settlements_${tripId}`);
+    setSettlements(savedSettlements ? JSON.parse(savedSettlements) : INITIAL_SETTLEMENTS);
+
+    setHomeCurrency(localStorage.getItem(`wanderway_home_currency_${tripId}`) || "USD");
+  }, [tripId]);
+
+  useEffect(() => {
+    localStorage.setItem(`wanderway_expenses_${tripId}`, JSON.stringify(expenses));
+  }, [expenses, tripId]);
+
+  useEffect(() => {
+    localStorage.setItem(`wanderway_settlements_${tripId}`, JSON.stringify(settlements));
+  }, [settlements, tripId]);
+
+  useEffect(() => {
+    localStorage.setItem(`wanderway_home_currency_${tripId}`, homeCurrency);
+  }, [homeCurrency, tripId]);
 
   useEffect(() => {
     async function fetchRates() {
@@ -74,9 +109,6 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
   const userPaid = expenses.filter(e => e.paidBy === "Arjun").reduce((acc, curr) => acc + curr.amount, 0);
   const perPersonCost = totalTripCost / 4; // Assuming 4 travelers
   const userShare = perPersonCost;
-
-  const tripId = itinerary?.id || "hampi-heritage-trail";
-  const estimatedBudget = itinerary?.estimatedBudget || 25000;
 
   // Master Target Budget for the trip with Local Storage sync
   const [targetBudget, setTargetBudget] = useState<number>(() => {
@@ -175,7 +207,7 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
       paidBy,
       amount: Number(amount),
       date: "Just now",
-      avatars: paidBy === "Arjun" 
+      avatars: paidBy === "Arjun"
         ? [AVATARS.arjun, AVATARS.priya, AVATARS.rahul, AVATARS.sarah]
         : paidBy === "Priya" ? [AVATARS.priya, AVATARS.arjun] : [AVATARS.rahul, AVATARS.arjun]
     };
@@ -225,7 +257,7 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
 
   return (
     <div id="expenses-screen" className="space-y-8 animate-fade-in">
-      
+
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -263,7 +295,7 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
 
       {/* Top Summary Card with Earth Orange Secondary Gradient */}
       <section className="bg-gradient-to-r from-[#E8A66B] to-[#D9895B] rounded-[24px] p-6 md:p-8 text-white shadow-xl shadow-orange-100/10 grid grid-cols-1 md:grid-cols-3 gap-6">
-        
+
         <div className="space-y-1.5 md:border-r border-white/20 md:pr-6">
           <span className="block text-[10px] uppercase font-bold text-white/80 tracking-widest">Total Trip Cost</span>
           <h2 className="font-display font-extrabold text-3xl">
@@ -295,8 +327,8 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
             </span>
           </h2>
           <span className="text-[11px] text-white/95">
-            {userPaid > userShare 
-              ? `You're owed ₹${(userPaid - userShare).toLocaleString()}${formatConverted(userPaid - userShare)}` 
+            {userPaid > userShare
+              ? `You're owed ₹${(userPaid - userShare).toLocaleString()}${formatConverted(userPaid - userShare)}`
               : `You owe ₹${(userShare - userPaid).toLocaleString()}${formatConverted(userShare - userPaid)}`}
           </span>
         </div>
@@ -304,10 +336,10 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
 
       {/* Main Grid split */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Column 1 & 2: Recent Expenses & Spending Breakdown */}
         <div className="lg:col-span-2 space-y-6">
-          
+
           {/* Spending Breakdown Pie Chart Card (Horizontal Layout) */}
           <div className="space-y-4">
             <h3 className="font-display font-bold text-base text-slate-900 px-1">
@@ -333,12 +365,12 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
                           <Cell key={`cell-${index}`} fill={COLORS[entry.category] || "#94A3B8"} />
                         ))}
                       </Pie>
-                      <Tooltip 
+                      <Tooltip
                         formatter={(value: any) => [`₹${Number(value).toLocaleString()}`, "Amount"]}
-                        contentStyle={{ 
-                          borderRadius: "12px", 
-                          border: "1px solid #E2E8F0", 
-                          fontFamily: "Inter, sans-serif", 
+                        contentStyle={{
+                          borderRadius: "12px",
+                          border: "1px solid #E2E8F0",
+                          fontFamily: "Inter, sans-serif",
                           fontSize: "11px",
                           fontWeight: "600",
                           backgroundColor: "#fff"
@@ -365,11 +397,11 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
                   Expense Distribution
                 </span>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3.5">
-                  {chartData.map((entry, index) => {
+                  {chartData.map((entry) => {
                     const pct = totalTripCost > 0 ? (entry.value / totalTripCost) * 100 : 0;
                     return (
-                      <div key={index} className="flex items-start gap-2.5 min-w-0">
-                        <div 
+                      <div key={entry.category} className="flex items-start gap-2.5 min-w-0">
+                        <div
                           className="w-2.5 h-2.5 rounded shrink-0 mt-1"
                           style={{ backgroundColor: COLORS[entry.category] || "#94A3B8" }}
                         />
@@ -394,7 +426,7 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
               <h3 className="font-display font-bold text-base text-slate-900">
                 Recent Expenses
               </h3>
-              
+
               <button
                 id="add-expense-modal-trigger"
                 onClick={() => setShowAddModal(true)}
@@ -449,7 +481,7 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
                       </span>
                     </div>
 
-                    <button 
+                    <button
                       onClick={() => handleDeleteExpense(exp.id)}
                       className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-opacity p-1 cursor-pointer"
                       title="Delete expense"
@@ -475,13 +507,12 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {settlements.map((set) => (
-                  <div 
-                    key={set.id} 
-                    className={`flex items-center justify-between p-3 rounded-xl border ${
-                      set.settled 
-                        ? "bg-slate-50/50 border-slate-100 opacity-60" 
-                        : "bg-amber-50/15 border-amber-100"
-                    }`}
+                  <div
+                    key={set.id}
+                    className={`flex items-center justify-between p-3 rounded-xl border ${set.settled
+                      ? "bg-slate-50/50 border-slate-100 opacity-60"
+                      : "bg-amber-50/15 border-amber-100"
+                      }`}
                   >
                     <div className="flex items-center gap-2.5">
                       <img src={set.avatar} alt={set.debtor} className="w-8 h-8 rounded-full object-cover" />
@@ -497,9 +528,8 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
 
                     <div className="flex items-center gap-3">
                       <div className="text-right">
-                        <span className={`block font-display font-bold text-sm ${
-                          set.settled ? "text-slate-400 line-through" : "text-[#D9895B]"
-                        }`}>
+                        <span className={`block font-display font-bold text-sm ${set.settled ? "text-slate-400 line-through" : "text-[#D9895B]"
+                          }`}>
                           ₹{set.amount.toLocaleString()}
                         </span>
                         {!set.settled && homeCurrency !== "INR" && (
@@ -523,7 +553,7 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
                 ))}
               </div>
 
-              <button 
+              <button
                 onClick={() => alert("Settlements summaries shared in the group chat!")}
                 className="w-full bg-[#E8A66B] hover:bg-[#d9895b] text-white py-3 rounded-xl font-display font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
@@ -536,7 +566,7 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
 
         {/* Column 3: Budget Limits & Alerts Sidebar List */}
         <div className="space-y-6">
-          
+
           {/* Proactive Budget Limits & Alerts System Card (Now positioned upwards) */}
           <div className="space-y-4">
             <h3 className="font-display font-bold text-base text-slate-900 px-1">
@@ -544,7 +574,7 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
             </h3>
 
             <div className="bg-white rounded-[24px] border border-slate-200 p-6 shadow-sm space-y-5">
-              
+
               {/* Proactive threshold alerts list */}
               <div className="space-y-2.5">
                 {budgetAlerts.some(a => a.isTriggered || a.isExceeded) ? (
@@ -642,11 +672,11 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
 
                         {/* Progress Bar */}
                         <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className="h-full transition-all duration-500 rounded-full"
-                            style={{ 
+                            style={{
                               width: `${pct}%`,
-                              backgroundColor: isOver ? "#EF4444" : isAlert ? "#F59E0B" : (COLORS[cat] || "#10B981") 
+                              backgroundColor: isOver ? "#EF4444" : isAlert ? "#F59E0B" : (COLORS[cat] || "#10B981")
                             }}
                           />
                         </div>
@@ -654,7 +684,7 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
                         {/* Editable Target Budgets */}
                         <div className="flex items-center justify-between gap-2 pt-0.5">
                           <span className="text-[9px] text-slate-450 font-medium">Adjust limit (₹):</span>
-                          <input 
+                          <input
                             type="number"
                             value={target}
                             min={1}
@@ -686,13 +716,13 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
       {showAddModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white rounded-[24px] border border-slate-200 shadow-2xl p-6 w-full max-w-[420px] space-y-4">
-            
+
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h4 className="font-display font-bold text-base text-slate-900 flex items-center gap-2">
                 <Receipt className="w-5 h-5 text-[#4A8B5C]" />
                 <span>Add Group Expense</span>
               </h4>
-              <button 
+              <button
                 onClick={() => setShowAddModal(false)}
                 className="text-slate-400 hover:text-slate-600 font-bold cursor-pointer text-sm"
               >
@@ -705,7 +735,7 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
                 <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
                   Expense Name
                 </label>
-                <input 
+                <input
                   id="modal-expense-title"
                   type="text"
                   required
@@ -721,7 +751,7 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
                   <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
                     Amount (₹ INR)
                   </label>
-                  <input 
+                  <input
                     id="modal-expense-amount"
                     type="number"
                     required
@@ -764,7 +794,7 @@ export default function ExpensesView({ itinerary }: ExpensesViewProps) {
                 </select>
               </div>
 
-              <button 
+              <button
                 id="modal-expense-save-btn"
                 type="submit"
                 className="w-full py-3.5 bg-gradient-to-r from-[#4FA8E0] to-[#3ACBB8] text-white rounded-xl font-display font-semibold text-sm shadow-md transition-all cursor-pointer"

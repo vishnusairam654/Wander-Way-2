@@ -1,12 +1,12 @@
-import React, { useState } from "react";
-import { 
-  CalendarDays, 
-  Users, 
-  MapPin, 
-  ThumbsUp, 
-  ThumbsDown, 
-  Sparkles, 
-  Star, 
+import React, { useEffect, useState } from "react";
+import {
+  CalendarDays,
+  Users,
+  MapPin,
+  ThumbsUp,
+  ThumbsDown,
+  Sparkles,
+  Star,
   DollarSign,
   Compass,
   CornerDownRight,
@@ -23,20 +23,39 @@ import MiniMapWidget from "./MiniMapWidget";
 import TripMemoriesGallery from "./TripMemoriesGallery";
 import DayWeatherWidget from "./DayWeatherWidget";
 import TripSummaryCard from "./TripSummaryCard";
+import { callApi } from "../lib/callApi";
 
 interface ItineraryViewProps {
-  itinerary: Itinerary;
+  itinerary?: Itinerary;
   onActivityVote: (dayIndex: number, activityIndex: number, voteType: "up" | "down") => void;
+  onItineraryUpdated?: (itinerary: Itinerary) => void;
 }
 
-export default function ItineraryView({ itinerary, onActivityVote }: ItineraryViewProps) {
+export default function ItineraryView({ itinerary, onActivityVote, onItineraryUpdated }: ItineraryViewProps) {
+  if (!itinerary) {
+    return null;
+  }
+
+  const itineraryId = itinerary.id || "trip";
   const [activeDay, setActiveDay] = useState<number>(1);
   const [showAiPopup, setShowAiPopup] = useState(false);
   const [aiQuestion, setAiQuestion] = useState("");
-  const [aiAnswers, setAiAnswers] = useState<string[]>([]);
+  const [aiAnswers, setAiAnswers] = useState<string[]>(() => {
+    const saved = localStorage.getItem(`wanderway_ai_answers_${itineraryId}`);
+    return saved ? JSON.parse(saved) : [];
+  });
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem(`wanderway_ai_answers_${itineraryId}`, JSON.stringify(aiAnswers));
+  }, [aiAnswers, itineraryId]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(`wanderway_ai_answers_${itineraryId}`);
+    setAiAnswers(saved ? JSON.parse(saved) : []);
+  }, [itineraryId]);
 
   const handleShareTrip = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -45,7 +64,7 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
   };
 
   const [completedActivityIds, setCompletedActivityIds] = useState<string[]>(() => {
-    const saved = localStorage.getItem(`wanderway_completed_${itinerary.id || "hampi"}`);
+    const saved = localStorage.getItem(`wanderway_completed_${itineraryId}`);
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -54,7 +73,7 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
       ? completedActivityIds.filter((id) => id !== actId)
       : [...completedActivityIds, actId];
     setCompletedActivityIds(next);
-    localStorage.setItem(`wanderway_completed_${itinerary.id || "hampi"}`, JSON.stringify(next));
+    localStorage.setItem(`wanderway_completed_${itineraryId}`, JSON.stringify(next));
   };
 
   const totalActivities = itinerary.days.reduce((total, day) => total + (day.activities?.length || 0), 0);
@@ -63,6 +82,10 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
     return total + dayCompletedCount;
   }, 0);
   const completionPercentage = totalActivities > 0 ? Math.round((completedActivitiesCount / totalActivities) * 100) : 0;
+  const tripStartDate = itinerary.createdAt ? new Date(itinerary.createdAt) : new Date();
+  const tripEndDate = new Date(tripStartDate);
+  tripEndDate.setDate(tripStartDate.getDate() + Math.max(0, itinerary.durationDays - 1));
+  const tripDateRange = `${tripStartDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} - ${tripEndDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
 
   const parseActivityTime = (timeStr: string) => {
     let hour = 9;
@@ -126,11 +149,11 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
           const cleanDesc = (activity.description || "Scenic travel excursion with WanderWay")
             .replace(/[,;]/g, "")
             .replace(/\n/g, "\\n");
-          const cleanLoc = (activity.bestPart ? `Highlight: ${activity.bestPart}` : itinerary.destination || "Hampi")
+          const cleanLoc = (activity.bestPart ? `Highlight: ${activity.bestPart}` : itinerary.destination || "Destination")
             .replace(/[,;]/g, "");
 
           lines.push("BEGIN:VEVENT");
-          lines.push(`UID:wanderway-${itinerary.id || "hampi"}-${day.dayNumber}-${actIdx}@wanderway.com`);
+          lines.push(`UID:wanderway-${itineraryId}-${day.dayNumber}-${actIdx}@wanderway.com`);
           lines.push(`DTSTAMP:${dateStr}T090000Z`);
           lines.push(`DTSTART;TZID=Asia/Kolkata:${dtStart}`);
           lines.push(`DTEND;TZID=Asia/Kolkata:${dtEnd}`);
@@ -147,13 +170,13 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
         const endDayStr = nextDay.toISOString().slice(0, 10).replace(/-/g, "");
 
         lines.push("BEGIN:VEVENT");
-        lines.push(`UID:wanderway-${itinerary.id || "hampi"}-${day.dayNumber}-allday@wanderway.com`);
+        lines.push(`UID:wanderway-${itineraryId}-${day.dayNumber}-allday@wanderway.com`);
         lines.push(`DTSTAMP:${dateStr}T090000Z`);
         lines.push(`DTSTART;VALUE=DATE:${startDayStr}`);
         lines.push(`DTEND;VALUE=DATE:${endDayStr}`);
         lines.push(`SUMMARY:Day ${day.dayNumber}: ${day.title || "Sightseeing"}`);
         lines.push(`DESCRIPTION:Enjoying curated schedule in ${itinerary.destination || "destination"}`);
-        lines.push(`LOCATION:${itinerary.destination || "Hampi"}`);
+        lines.push(`LOCATION:${itinerary.destination || "Destination"}`);
         lines.push("STATUS:CONFIRMED");
         lines.push("SEQUENCE:0");
         lines.push("END:VEVENT");
@@ -193,16 +216,28 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
     setAiQuestion("");
 
     try {
-      const response = await fetch("/api/chat", {
+      if (itinerary.id) {
+        const data = await callApi<{ reply?: string; itinerary?: Itinerary }>(`/api/trips/${itinerary.id}/refine-itinerary`, {
+          method: "POST",
+          body: JSON.stringify({
+            instruction: question,
+            itinerary
+          })
+        });
+        if (data.itinerary) {
+          onItineraryUpdated?.(data.itinerary);
+        }
+        setAiAnswers(prev => [...prev, `Q: ${question}\nA: ${data.reply || "Updated the itinerary."}`]);
+        return;
+      }
+
+      const data = await callApi<{ reply?: string }>("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: [{ sender: "user", content: `Regarding itinerary "${itinerary.title}", query: ${question}` }],
           currentItineraryTitle: itinerary.title
         })
       });
-
-      const data = await response.json();
       setAiAnswers(prev => [...prev, `Q: ${question}\nA: ${data.reply || "No response received."}`]);
     } catch (err) {
       console.error(err);
@@ -214,7 +249,7 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
 
   return (
     <div id="itinerary-screen" className="relative space-y-8 animate-fade-in">
-      
+
       {/* Banner / Header details */}
       <section className="bg-white rounded-[24px] border border-slate-200 p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6 print:hidden w-full overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center gap-5 w-full md:w-auto">
@@ -265,7 +300,7 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
             <div className="flex flex-wrap gap-4 text-xs font-sans text-slate-500 font-medium">
               <span className="flex items-center gap-1.5">
                 <CalendarDays className="w-4 h-4 text-slate-400" />
-                <span>Oct 12 - {12 + itinerary.durationDays}, 2023</span>
+                <span>{tripDateRange}</span>
               </span>
               <span className="flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-slate-400" />
@@ -294,7 +329,7 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
               <Calendar className="w-4 h-4 text-white" />
               <span>Export Calendar</span>
             </button>
-            
+
             {exportSuccess && (
               <div className="absolute right-0 top-full mt-1.5 bg-slate-900 text-white text-[10px] font-sans px-2.5 py-1.5 rounded-lg shadow-lg z-20 flex items-center gap-1 whitespace-nowrap border border-slate-800 animate-fade-in">
                 <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -312,7 +347,7 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
               <Send className="w-4 h-4 text-white" />
               <span>Share Trip</span>
             </button>
-            
+
             {shareSuccess && (
               <div className="absolute right-0 top-full mt-1.5 bg-slate-900 text-white text-[10px] font-sans px-2.5 py-1.5 rounded-lg shadow-lg z-20 flex items-center gap-1 whitespace-nowrap border border-slate-800 animate-fade-in">
                 <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -341,11 +376,10 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
             key={day.dayNumber}
             id={`day-tab-btn-${day.dayNumber}`}
             onClick={() => setActiveDay(day.dayNumber)}
-            className={`px-5 py-3 rounded-xl font-display font-bold text-xs transition-all whitespace-nowrap cursor-pointer border ${
-              activeDay === day.dayNumber
+            className={`px-5 py-3 rounded-xl font-display font-bold text-xs transition-all whitespace-nowrap cursor-pointer border ${activeDay === day.dayNumber
                 ? "bg-slate-100 text-slate-900 border-slate-300 shadow-sm"
                 : "bg-white text-slate-500 hover:bg-slate-50 border-slate-200"
-            }`}
+              }`}
           >
             Day {day.dayNumber}: {day.title.split("&")[0].split(" - ")[0]}
           </button>
@@ -354,105 +388,100 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
 
       {/* Main Content Area */}
       <section className="flex flex-col gap-8 print:hidden">
-        
+
         {/* Day's Activities list (Full Width) */}
         <div className="w-full space-y-6">
           {itinerary.days
-              .filter((d) => d.dayNumber === activeDay)
-              .map((day) => (
-                <div key={day.dayNumber} className="space-y-6">
-                  
-                  {/* Timeline title bar */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1 border-b border-slate-100 pb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#4A8B5C] ring-4 ring-green-100"></div>
-                      <h3 className="font-display font-bold text-lg text-slate-900">
-                        Day {day.dayNumber} - {day.title}
-                      </h3>
-                    </div>
-                    <DayWeatherWidget destination={itinerary.destination || "Hampi"} dayIndex={day.dayNumber - 1} />
-                  </div>
+            .filter((d) => d.dayNumber === activeDay)
+            .map((day) => (
+              <div key={day.dayNumber} className="space-y-6">
 
-                  {/* List of Activities with interactive elements */}
-                  <div className="space-y-6 relative border-l border-slate-200 ml-2.5 pl-6">
-                    {day.activities.map((act, actIdx) => {
-                      const isCompleted = completedActivityIds.includes(act.id || `${day.dayNumber}-${act.title}`);
-                      return (
-                        <div 
-                          key={act.id || actIdx}
-                          className={`rounded-2xl border p-5 shadow-sm space-y-3 hover:shadow-md transition-all relative group ${
-                            isCompleted
-                              ? "bg-slate-50/70 border-slate-200/50 opacity-80"
-                              : "bg-white border-slate-200"
+                {/* Timeline title bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1 border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#4A8B5C] ring-4 ring-green-100"></div>
+                    <h3 className="font-display font-bold text-lg text-slate-900">
+                      Day {day.dayNumber} - {day.title}
+                    </h3>
+                  </div>
+                  <DayWeatherWidget destination={itinerary.destination || "Destination"} dayIndex={day.dayNumber - 1} />
+                </div>
+
+                {/* List of Activities with interactive elements */}
+                <div className="space-y-6 relative border-l border-slate-200 ml-2.5 pl-6">
+                  {day.activities.map((act, actIdx) => {
+                    const isCompleted = completedActivityIds.includes(act.id || `${day.dayNumber}-${act.title}`);
+                    return (
+                      <div
+                        key={act.id}
+                        className={`rounded-2xl border p-5 shadow-sm space-y-3 hover:shadow-md transition-all relative group ${isCompleted
+                            ? "bg-slate-50/70 border-slate-200/50 opacity-80"
+                            : "bg-white border-slate-200"
                           }`}
-                        >
-                          {/* Timeline dot marker on the left border */}
-                          <div className={`absolute -left-[31px] top-7 w-3.5 h-3.5 rounded-full transition-colors ${
-                            isCompleted
-                              ? "bg-emerald-500 border-2 border-emerald-500"
-                              : "bg-white border-2 border-[#4A8B5C] group-hover:bg-[#4A8B5C]"
+                      >
+                        {/* Timeline dot marker on the left border */}
+                        <div className={`absolute -left-[31px] top-7 w-3.5 h-3.5 rounded-full transition-colors ${isCompleted
+                            ? "bg-emerald-500 border-2 border-emerald-500"
+                            : "bg-white border-2 border-[#4A8B5C] group-hover:bg-[#4A8B5C]"
                           }`}></div>
 
-                          {/* Header block */}
-                          <div className="flex justify-between items-start gap-4">
-                            <div className="flex items-start gap-3 flex-1 min-w-0">
-                              {/* Circular completion checkbox */}
-                              <button 
-                                onClick={() => toggleActivityCompleted(act.id || `${day.dayNumber}-${act.title}`)}
-                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all cursor-pointer ${
-                                  isCompleted
-                                    ? "bg-emerald-500 border-emerald-500 text-white shadow-xs"
-                                    : "border-slate-300 hover:border-emerald-500 text-transparent hover:bg-emerald-50/10"
+                        {/* Header block */}
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex items-start gap-3 flex-1 min-w-0">
+                            {/* Circular completion checkbox */}
+                            <button
+                              onClick={() => toggleActivityCompleted(act.id || `${day.dayNumber}-${act.title}`)}
+                              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all cursor-pointer ${isCompleted
+                                  ? "bg-emerald-500 border-emerald-500 text-white shadow-xs"
+                                  : "border-slate-300 hover:border-emerald-500 text-transparent hover:bg-emerald-50/10"
                                 }`}
-                                title={isCompleted ? "Mark as Incomplete" : "Mark as Completed"}
-                              >
-                                <Check className="w-3.5 h-3.5 stroke-[3.5]" />
-                              </button>
+                              title={isCompleted ? "Mark as Incomplete" : "Mark as Completed"}
+                            >
+                              <Check className="w-3.5 h-3.5 stroke-[3.5]" />
+                            </button>
 
-                              <div className="space-y-1 flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded">
-                                    {act.time}
-                                  </span>
-                                  <span className="text-xs">
-                                    {getCategoryIcon(act.category)}
-                                  </span>
-                                  <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                                    act.category === "culture" ? "bg-[#8FBF7F]/10 text-[#4A8B5C]" :
+                            <div className="space-y-1 flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded">
+                                  {act.time}
+                                </span>
+                                <span className="text-xs">
+                                  {getCategoryIcon(act.category)}
+                                </span>
+                                <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${act.category === "culture" ? "bg-[#8FBF7F]/10 text-[#4A8B5C]" :
                                     act.category === "food" ? "bg-[#E8A66B]/10 text-[#D9895B]" :
-                                    act.category === "nature" ? "bg-emerald-50 text-emerald-700" :
-                                    "bg-slate-100 text-slate-600"
+                                      act.category === "nature" ? "bg-emerald-50 text-emerald-700" :
+                                        "bg-slate-100 text-slate-600"
                                   }`}>
-                                    {act.category}
+                                  {act.category}
+                                </span>
+                                {act.isMustSee && (
+                                  <span className="bg-red-50 text-red-500 font-sans font-bold text-[9px] px-2 py-0.5 rounded tracking-wide uppercase">
+                                    Must See
                                   </span>
-                                  {act.isMustSee && (
-                                    <span className="bg-red-50 text-red-500 font-sans font-bold text-[9px] px-2 py-0.5 rounded tracking-wide uppercase">
-                                      Must See
-                                    </span>
-                                  )}
-                                </div>
-                                
-                                <h4 className={`font-display font-bold text-base transition-all ${
-                                  isCompleted ? "text-slate-400 line-through decoration-slate-300" : "text-slate-900"
-                                }`}>
-                                  {act.title}
-                                </h4>
+                                )}
                               </div>
-                            </div>
 
-                            {/* Cost & Rating */}
-                            <div className="text-right shrink-0">
-                              <span className="block font-display font-extrabold text-sm text-slate-800">
-                                {act.cost > 0 ? `₹${act.cost.toLocaleString()}` : "Free"}
-                              </span>
-                              {act.rating && (
-                                <div className="flex items-center gap-1 text-amber-500 text-[11px] justify-end mt-0.5 font-bold">
-                                  <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                                  <span>{act.rating}</span>
-                                </div>
-                              )}
+                              <h4 className={`font-display font-bold text-base transition-all ${isCompleted ? "text-slate-400 line-through decoration-slate-300" : "text-slate-900"
+                                }`}>
+                                {act.title}
+                              </h4>
                             </div>
                           </div>
+
+                          {/* Cost & Rating */}
+                          <div className="text-right shrink-0">
+                            <span className="block font-display font-extrabold text-sm text-slate-800">
+                              {act.cost > 0 ? `₹${act.cost.toLocaleString()}` : "Free"}
+                            </span>
+                            {act.rating && (
+                              <div className="flex items-center gap-1 text-amber-500 text-[11px] justify-end mt-0.5 font-bold">
+                                <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                                <span>{act.rating}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
 
                         {/* Description */}
                         <p className="font-sans text-xs text-slate-500 leading-relaxed">
@@ -481,11 +510,10 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
                             <button
                               id={`vote-up-btn-${act.id}`}
                               onClick={() => onActivityVote(day.dayNumber - 1, actIdx, "up")}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer ${
-                                act.userVote === "up"
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer ${act.userVote === "up"
                                   ? "bg-emerald-50 text-emerald-600 border-emerald-200"
                                   : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
-                              }`}
+                                }`}
                             >
                               <ThumbsUp className={`w-3.5 h-3.5 ${act.userVote === "up" ? "fill-emerald-500" : ""}`} />
                               <span>{act.votesUp}</span>
@@ -494,11 +522,10 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
                             <button
                               id={`vote-down-btn-${act.id}`}
                               onClick={() => onActivityVote(day.dayNumber - 1, actIdx, "down")}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer ${
-                                act.userVote === "down"
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer ${act.userVote === "down"
                                   ? "bg-red-50 text-red-500 border-red-200"
                                   : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
-                              }`}
+                                }`}
                             >
                               <ThumbsDown className={`w-3.5 h-3.5 ${act.userVote === "down" ? "fill-red-500" : ""}`} />
                               <span>{act.votesDown}</span>
@@ -508,25 +535,25 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
                       </div>
                     );
                   })}
-                  </div>
-
                 </div>
-              ))}
+
+              </div>
+            ))}
         </div>
 
         {/* Bottom Section: 2x2 Grid of Curated Widgets */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:hidden">
-          <MiniMapWidget 
-            dayNumber={activeDay} 
-            destination={itinerary.destination || "Hampi"} 
-            itinerary={itinerary} 
+          <MiniMapWidget
+            dayNumber={activeDay}
+            destination={itinerary.destination || "Destination"}
+            itinerary={itinerary}
           />
-          <WeatherWidget destination={itinerary.destination || "Hampi"} />
+          <WeatherWidget destination={itinerary.destination || "Destination"} />
           <div className="bg-white rounded-[24px] border border-slate-200 p-6 shadow-sm space-y-4">
             <h4 className="font-display font-bold text-sm text-slate-900">
               Trip Highlights
             </h4>
-            
+
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs font-medium border-b border-slate-100 pb-2.5">
                 <span className="text-slate-500">Total Activities</span>
@@ -587,7 +614,7 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
                 <Compass className="w-4 h-4 text-[#4FA8E0]" />
                 <span>AI Travel Assistant</span>
               </span>
-              <button 
+              <button
                 onClick={() => setShowAiPopup(false)}
                 className="text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
               >
@@ -599,7 +626,7 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
             <div className="flex-1 overflow-y-auto space-y-2 text-xs font-sans text-slate-600 max-h-48 hide-scrollbar">
               {aiAnswers.length === 0 ? (
                 <p className="text-slate-400 italic">
-                  Ask me anything about Hampi's stay options, average autumn weather, or local temple rules!
+                  Ask me anything about stay options, weather, transport, or local etiquette.
                 </p>
               ) : (
                 aiAnswers.map((ans, idx) => (
@@ -612,7 +639,7 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
             </div>
 
             <form onSubmit={handleAiQuestionSubmit} className="flex gap-1.5">
-              <input 
+              <input
                 id="input-ai-floating-query"
                 type="text"
                 value={aiQuestion}
@@ -620,7 +647,7 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
                 placeholder="Ask about weather, hotels, guide..."
                 className="flex-1 bg-slate-50 border border-transparent focus:border-[#4FA8E0] focus:bg-white rounded-lg px-3 py-2 text-xs font-sans outline-none"
               />
-              <button 
+              <button
                 id="btn-ai-floating-submit"
                 type="submit"
                 className="bg-[#4FA8E0] text-white p-2 rounded-lg hover:bg-[#3db3e6] transition-colors cursor-pointer"
@@ -653,7 +680,7 @@ export default function ItineraryView({ itinerary, onActivityVote }: ItineraryVi
               <h2 className="text-xl font-bold border-b border-slate-200 pb-1.5 text-slate-900 flex items-center justify-between">
                 <span>Day {day.dayNumber}: {day.title}</span>
               </h2>
-              
+
               <div className="space-y-4">
                 {day.activities.map((act, idx) => (
                   <div key={idx} className="border border-slate-200 rounded-xl p-4 bg-slate-50/20 space-y-2">

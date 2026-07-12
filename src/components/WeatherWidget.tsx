@@ -62,39 +62,24 @@ export default function WeatherWidget({ destination }: WeatherWidgetProps) {
         const geoRes = await fetch(geoUrl);
         const geoData = await geoRes.json();
 
-        let lat = 15.335; // Default Hampi Coordinates
-        let lon = 76.462;
-        let resolvedName = destination;
-
-        if (geoData.results && geoData.results.length > 0) {
-          lat = geoData.results[0].latitude;
-          lon = geoData.results[0].longitude;
-          resolvedName = geoData.results[0].name;
-        } else {
-          // Hardcoded fallbacks for well-known destinations in the system
-          const lowerDest = destination.toLowerCase();
-          if (lowerDest.includes("hampi")) {
-            lat = 15.335; lon = 76.462;
-          } else if (lowerDest.includes("goa")) {
-            lat = 15.299; lon = 74.124;
-          } else if (lowerDest.includes("swiss") || lowerDest.includes("alps")) {
-            lat = 46.818; lon = 8.227;
-          } else if (lowerDest.includes("kyoto") || lowerDest.includes("japan")) {
-            lat = 35.011; lon = 135.768;
-          }
+        if (!geoData.results || geoData.results.length === 0) {
+          throw new Error("location_not_found");
         }
 
+        const lat = geoData.results[0].latitude;
+        const lon = geoData.results[0].longitude;
+
         // 2. Fetch current weather and 3-day forecast from Open-Meteo
-        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`;
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`;
         const weatherRes = await fetch(weatherUrl);
         const weatherData = await weatherRes.json();
 
         if (!active) return;
 
-        if (weatherData.current_weather) {
-          const current = weatherData.current_weather;
-          const currentMeta = getCodeMeta(current.weathercode);
-          
+        if (weatherData.current) {
+          const current = weatherData.current;
+          const currentMeta = getCodeMeta(current.weather_code);
+
           // Map forecast days
           const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
           const forecast = [];
@@ -115,9 +100,9 @@ export default function WeatherWidget({ destination }: WeatherWidgetProps) {
           }
 
           setWeather({
-            temp: Math.round(current.temperature),
-            windSpeed: current.windspeed,
-            humidity: 65, // Average mock humidity fallback since it's not always in simple current endpoint
+            temp: Math.round(current.temperature_2m),
+            windSpeed: Math.round(current.wind_speed_10m),
+            humidity: Math.round(current.relative_humidity_2m),
             description: currentMeta.label,
             icon: currentMeta.icon,
             forecast
@@ -128,7 +113,10 @@ export default function WeatherWidget({ destination }: WeatherWidgetProps) {
       } catch (err) {
         console.error("Weather fetch failure:", err);
         if (active) {
-          setError("Failed to fetch real-time weather forecasts.");
+          const text = err instanceof Error && err.message === "location_not_found"
+            ? "Location not found"
+            : "Failed to fetch real-time weather forecasts.";
+          setError(text);
         }
       } finally {
         if (active) {
@@ -166,7 +154,7 @@ export default function WeatherWidget({ destination }: WeatherWidgetProps) {
           <Sun className="w-5 h-5" />
         </div>
         <h4 className="font-display font-bold text-xs text-slate-800">Weather Forecast</h4>
-        <p className="font-sans text-[11px] text-slate-400 mt-1">Real-time weather unavailable.</p>
+        <p className="font-sans text-[11px] text-slate-400 mt-1">{error || "Real-time weather unavailable."}</p>
       </div>
     );
   }

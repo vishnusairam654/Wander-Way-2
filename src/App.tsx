@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import Sidebar from "./components/Sidebar";
 import LoginView from "./components/LoginView";
@@ -9,66 +9,145 @@ import MapView from "./components/MapView";
 import ExpensesView from "./components/ExpensesView";
 import CollabView from "./components/CollabView";
 import PackingListView from "./components/PackingListView";
-import FlashbackView from "./components/FlashbackView";
 import DocumentsView from "./components/DocumentsView";
+import NewUserPlaceholder from "./components/NewUserPlaceholder";
 import { Itinerary } from "./types";
-import { INITIAL_HAMPI_ITINERARY } from "./data";
-import { 
-  FileText, 
-  Users, 
-  Compass, 
-  Map, 
-  FolderOpen, 
-  Luggage, 
-  Receipt, 
-  History, 
-  Sparkles, 
+import {
+  FileText,
+  Users,
+  Compass,
+  Map,
+  FolderOpen,
+  Luggage,
+  Receipt,
+  History,
+  Sparkles,
   Home,
-  Calendar
+  AlertCircle
 } from "lucide-react";
 import QuickNotesPanel from "./components/QuickNotesPanel";
 import { useAuth } from "./hooks/useAuth";
+import { callApi } from "./lib/callApi";
+
+const TRIPS_CACHE_KEY = "wanderway_cached_trips";
+const ACTIVE_TRIP_CACHE_KEY = "wanderway_active_trip_id";
+const PLANNING_NAV_NOTICE = "Your trip is still being planned. Please wait until WanderWay finishes before changing pages.";
+
+function readCachedTrips(): Itinerary[] {
+  try {
+    const saved = localStorage.getItem(TRIPS_CACHE_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
 
 export default function App() {
-  const { user: firebaseAuthUser, loading: authLoading, signOut: firebaseSignOut } = useAuth();
+  const { user: firebaseAuthUser, loading: authLoading, signOut: firebaseSignOut, getIdToken } = useAuth();
 
   const [currentTab, setCurrentTab] = useState("dashboard");
-  const [tripsList, setTripsList] = useState<Itinerary[]>([]);
-  const [activeItinerary, setActiveItinerary] = useState<Itinerary>(INITIAL_HAMPI_ITINERARY);
+  const [tripsList, setTripsList] = useState<Itinerary[]>(() => readCachedTrips());
+  const [activeItinerary, setActiveItinerary] = useState<Itinerary | null>(() => {
+    const cachedTrips = readCachedTrips();
+    const activeId = localStorage.getItem(ACTIVE_TRIP_CACHE_KEY);
+    return cachedTrips.find(trip => trip.id === activeId) || cachedTrips[0] || null;
+  });
   const [isNotesOpen, setIsNotesOpen] = useState(false);
-  
+  const [isPlanningInProgress, setIsPlanningInProgress] = useState(false);
+  const [planningNotice, setPlanningNotice] = useState<string | null>(null);
+
   // Real-time Collaboration States
   const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
   const [latestWsMessage, setLatestWsMessage] = useState<any>(null);
+  const [isReconnecting, setIsReconnecting] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
 
   // Fetch trips list upon successful login
   const fetchTripsList = async () => {
     try {
-      const response = await fetch("/api/trips");
-      const data = await response.json();
+      const data = await callApi<{ trips: Itinerary[] }>("/api/trips");
       if (data.trips && data.trips.length > 0) {
-        setTripsList(data.trips);
-        // Find default Hampi or first trip
-        const defaultTrip = data.trips.find((t: any) => t.id === "hampi-heritage-trail") || data.trips[0];
-        if (defaultTrip) {
-          setActiveItinerary(defaultTrip);
-        }
+        setTripsList((cached) => {
+          const merged = [...data.trips];
+          cached.forEach((trip) => {
+            if (trip.id && !merged.some(serverTrip => serverTrip.id === trip.id)) {
+              merged.push(trip);
+            }
+          });
+          return merged;
+        });
+        const defaultTrip = [...data.trips].sort((a, b) => {
+          const ta = new Date(a.createdAt || 0).getTime();
+          const tb = new Date(b.createdAt || 0).getTime();
+          return tb - ta;
+        })[0];
+        setActiveItinerary((current) => current || defaultTrip || null);
+      } else {
+        setTripsList((cached) => cached);
+        setActiveItinerary((current) => current);
       }
     } catch (err) {
       console.error("Error retrieving trips database:", err);
     }
   };
 
+  useEffect(() => {
+    localStorage.setItem(TRIPS_CACHE_KEY, JSON.stringify(tripsList));
+  }, [tripsList]);
+
+  useEffect(() => {
+    if (activeItinerary?.id) {
+      localStorage.setItem(ACTIVE_TRIP_CACHE_KEY, activeItinerary.id);
+    }
+  }, [activeItinerary?.id]);
+
+  useEffect(() => {
+    if (!planningNotice) return;
+
+    const timeout = window.setTimeout(() => {
+      setPlanningNotice(null);
+    }, 4200);
+
+    return () => window.clearTimeout(timeout);
+  }, [planningNotice]);
+
+  useEffect(() => {
+    if (!isPlanningInProgress) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isPlanningInProgress]);
+
   // Reactively fetch trips when Firebase auth user changes
   useEffect(() => {
+    let ignore = false;
+
+    if (authLoading) {
+      return () => {
+        ignore = true;
+      };
+    }
+
     if (firebaseAuthUser) {
-      fetchTripsList();
+      (async () => {
+        await fetchTripsList();
+        if (ignore) return;
+      })();
     } else {
       setTripsList([]);
+      setActiveItinerary(null);
       setCurrentTab("dashboard");
     }
-  }, [firebaseAuthUser?.email]);
+
+    return () => {
+      ignore = true;
+    };
+  }, [authLoading, firebaseAuthUser?.email]);
 
   // Derive current user from Firebase auth state for downstream components
   const currentUser = firebaseAuthUser;
@@ -77,23 +156,45 @@ export default function App() {
   const handleSignOut = async () => {
     await firebaseSignOut();
     setTripsList([]);
+    setActiveItinerary(null);
     setCurrentTab("dashboard");
   };
 
+  const requestTabChange = (tab: string) => {
+    if (isPlanningInProgress && currentTab === "planner" && tab !== "planner") {
+      setPlanningNotice(PLANNING_NAV_NOTICE);
+      return;
+    }
+
+    setCurrentTab(tab);
+  };
+
   const handleNewTripClick = () => {
-    setCurrentTab("planner");
+    requestTabChange("planner");
   };
 
   const handleItineraryGenerated = (itinerary: Itinerary) => {
+    const generatedItinerary = {
+      ...itinerary,
+      createdAt: itinerary.createdAt || new Date().toISOString()
+    };
+
     // Insert new generated trip into current local trips list state
-    setTripsList((prev) => [itinerary, ...prev]);
-    setActiveItinerary(itinerary);
+    setTripsList((prev) => [generatedItinerary, ...prev.filter(trip => trip.id !== generatedItinerary.id)]);
+    setActiveItinerary(generatedItinerary);
+    setIsPlanningInProgress(false);
+    setPlanningNotice(null);
     setCurrentTab("itinerary");
+  };
+
+  const handleItineraryUpdated = (itinerary: Itinerary) => {
+    setActiveItinerary(itinerary);
+    setTripsList((prev) => [itinerary, ...prev.filter(trip => trip.id !== itinerary.id)]);
   };
 
   const handleViewItinerary = (itinerary: Itinerary) => {
     setActiveItinerary(itinerary);
-    setCurrentTab("itinerary");
+    requestTabChange("itinerary");
   };
 
   // Real-time Websocket Connection Management
@@ -101,111 +202,147 @@ export default function App() {
     if (!isLoggedIn || !currentUser || !activeItinerary?.id) return;
 
     const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${wsProtocol}//${window.location.host}`;
-    
-    console.log("Establishing WanderWay Sync connection with:", wsUrl);
-    const socket = new WebSocket(wsUrl);
-    wsRef.current = socket;
+    const wsHost = window.location.port === "4000" ? "localhost:3000" : window.location.host;
+    const wsUrl = `${wsProtocol}//${wsHost}`;
 
-    socket.onopen = () => {
-      console.log("WebSocket connection established. Syncing trip ID:", activeItinerary.id);
-      socket.send(JSON.stringify({
-        type: "join",
-        tripId: activeItinerary.id,
-        user: currentUser
-      }));
-    };
+    let closedByEffect = false;
+    let reconnectTimeout: number | null = null;
+    let reconnectAttempt = 0;
 
-    socket.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        setLatestWsMessage(msg);
-        
-        if (msg.type === "presence") {
-          setOnlineUsers(msg.users);
-        } else if (msg.type === "vote_updated") {
-          setActiveItinerary((prev) => {
-            if (prev.id !== msg.tripId) return prev;
-            const updatedDays = prev.days.map((day) => {
-              if (day.dayNumber === msg.dayNumber) {
-                return {
-                  ...day,
-                  activities: day.activities.map((act) => {
-                    if (act.id === msg.activityId) {
-                      const userVote = msg.userVotes?.[currentUser.email] || null;
-                      return {
-                        ...act,
-                        votesUp: msg.votesUp,
-                        votesDown: msg.votesDown,
-                        userVotes: msg.userVotes,
-                        userVote: userVote
-                      };
-                    }
-                    return act;
-                  })
-                };
-              }
-              return day;
-            });
-            
-            const updated = { ...prev, days: updatedDays };
-            // Keep tripsList fully synchronized
-            setTripsList(prevList => prevList.map(t => t.id === prev.id ? updated : t));
-            return updated;
-          });
-        } else if (msg.type === "comment_added") {
-          setActiveItinerary((prev) => {
-            if (prev.id !== msg.tripId) return prev;
-            if (prev.comments?.some(c => c.id === msg.comment.id)) return prev;
-            const updated = {
-              ...prev,
-              comments: [...(prev.comments || []), msg.comment]
-            };
-            setTripsList(prevList => prevList.map(t => t.id === prev.id ? updated : t));
-            return updated;
-          });
-        } else if (msg.type === "collaborator_invited") {
-          setActiveItinerary((prev) => {
-            if (prev.id !== msg.tripId) return prev;
-            if (prev.collaborators?.some(c => c.email.toLowerCase() === msg.collaborator.email.toLowerCase())) return prev;
-            const updated = {
-              ...prev,
-              collaborators: [...(prev.collaborators || []), msg.collaborator]
-            };
-            setTripsList(prevList => prevList.map(t => t.id === prev.id ? updated : t));
-            return updated;
-          });
-        } else if (msg.type === "documents_updated") {
-          setActiveItinerary((prev) => {
-            if (prev.id !== msg.tripId) return prev;
-            const updated = {
-              ...prev,
-              documents: msg.documents
-            };
-            setTripsList(prevList => prevList.map(t => t.id === prev.id ? updated : t));
-            return updated;
-          });
+    const connect = () => {
+      console.log("Establishing WanderWay Sync connection with:", wsUrl);
+      const socket = new WebSocket(wsUrl);
+      wsRef.current = socket;
+
+      socket.onopen = async () => {
+        reconnectAttempt = 0;
+        setIsReconnecting(false);
+        const token = await getIdToken();
+        if (!token) {
+          socket.close();
+          return;
         }
-      } catch (err) {
-        console.error("Failed to parse collaborative update payload:", err);
-      }
+
+        socket.send(JSON.stringify({
+          type: "join",
+          tripId: activeItinerary.id,
+          token
+        }));
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          setLatestWsMessage(msg);
+
+          if (msg.type === "presence") {
+            setOnlineUsers(msg.users);
+          } else if (msg.type === "itinerary_updated") {
+            setActiveItinerary((prev) => {
+              if (!prev || prev.id !== msg.tripId) return prev;
+              setTripsList(prevList => [msg.itinerary, ...prevList.filter(t => t.id !== msg.tripId)]);
+              return msg.itinerary;
+            });
+          } else if (msg.type === "vote_updated") {
+            setActiveItinerary((prev) => {
+              if (!prev) return prev;
+              if (prev.id !== msg.tripId) return prev;
+              const updatedDays = prev.days.map((day) => {
+                if (day.dayNumber === msg.dayNumber) {
+                  return {
+                    ...day,
+                    activities: day.activities.map((act) => {
+                      if (act.id === msg.activityId) {
+                        const userVote = msg.userVotes?.[currentUser.email] || null;
+                        return {
+                          ...act,
+                          votesUp: msg.votesUp,
+                          votesDown: msg.votesDown,
+                          userVotes: msg.userVotes,
+                          userVote: userVote
+                        };
+                      }
+                      return act;
+                    })
+                  };
+                }
+                return day;
+              });
+
+              const updated = { ...prev, days: updatedDays };
+              // Keep tripsList fully synchronized
+              setTripsList(prevList => prevList.map(t => t.id === prev.id ? updated : t));
+              return updated;
+            });
+          } else if (msg.type === "comment_added") {
+            setActiveItinerary((prev) => {
+              if (!prev) return prev;
+              if (prev.id !== msg.tripId) return prev;
+              if (prev.comments?.some(c => c.id === msg.comment.id)) return prev;
+              const updated = {
+                ...prev,
+                comments: [...(prev.comments || []), msg.comment]
+              };
+              setTripsList(prevList => prevList.map(t => t.id === prev.id ? updated : t));
+              return updated;
+            });
+          } else if (msg.type === "collaborator_invited") {
+            setActiveItinerary((prev) => {
+              if (!prev) return prev;
+              if (prev.id !== msg.tripId) return prev;
+              if (prev.collaborators?.some(c => c.email.toLowerCase() === msg.collaborator.email.toLowerCase())) return prev;
+              const updated = {
+                ...prev,
+                collaborators: [...(prev.collaborators || []), msg.collaborator]
+              };
+              setTripsList(prevList => prevList.map(t => t.id === prev.id ? updated : t));
+              return updated;
+            });
+          } else if (msg.type === "documents_updated") {
+            setActiveItinerary((prev) => {
+              if (!prev) return prev;
+              if (prev.id !== msg.tripId) return prev;
+              const updated = {
+                ...prev,
+                documents: msg.documents
+              };
+              setTripsList(prevList => prevList.map(t => t.id === prev.id ? updated : t));
+              return updated;
+            });
+          }
+        } catch (err) {
+          console.error("Failed to parse collaborative update payload:", err);
+        }
+      };
+
+      socket.onerror = (err) => {
+        console.error("WanderWay WebSocket error:", err);
+      };
+
+      socket.onclose = () => {
+        if (closedByEffect) return;
+        reconnectAttempt += 1;
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempt), 10000);
+        setIsReconnecting(true);
+        reconnectTimeout = window.setTimeout(connect, delay);
+      };
     };
 
-    socket.onerror = (err) => {
-      console.error("WanderWay WebSocket error:", err);
-    };
-
-    socket.onclose = () => {
-      console.log("WebSocket connection closed cleanly.");
-    };
+    connect();
 
     return () => {
-      socket.close();
+      closedByEffect = true;
+      if (reconnectTimeout !== null) {
+        window.clearTimeout(reconnectTimeout);
+      }
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
     };
   }, [isLoggedIn, activeItinerary?.id, currentUser?.email]);
 
   // Outgoing Collaborative Events Broadcast
-  const handleVote = (dayNumber: number, activityId: string, voteType: "up" | "down") => {
+  const handleVote = useCallback((dayNumber: number, activityId: string, voteType: "up" | "down") => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && currentUser && activeItinerary?.id) {
       wsRef.current.send(JSON.stringify({
         type: "vote",
@@ -216,9 +353,9 @@ export default function App() {
         email: currentUser.email
       }));
     }
-  };
+  }, [currentUser, activeItinerary?.id]);
 
-  const handleComment = (content: string) => {
+  const handleComment = useCallback((content: string) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && currentUser && activeItinerary?.id) {
       wsRef.current.send(JSON.stringify({
         type: "comment",
@@ -230,9 +367,9 @@ export default function App() {
         }
       }));
     }
-  };
+  }, [currentUser, activeItinerary?.id]);
 
-  const handleInvite = (email: string) => {
+  const handleInvite = useCallback((email: string) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && activeItinerary?.id) {
       wsRef.current.send(JSON.stringify({
         type: "invite",
@@ -240,16 +377,17 @@ export default function App() {
         email
       }));
     }
-  };
+  }, [activeItinerary?.id]);
 
   // Connects Day schedule view's simple upvote clicks with WebSocket channels
-  const handleActivityVote = (dayIdx: number, actIdx: number, voteType: "up" | "down") => {
+  const handleActivityVote = useCallback((dayIdx: number, actIdx: number, voteType: "up" | "down") => {
+    if (!activeItinerary) return;
     const day = activeItinerary.days[dayIdx];
     const activity = day.activities[actIdx];
     if (day && activity) {
       handleVote(day.dayNumber, activity.id, voteType);
     }
-  };
+  }, [activeItinerary, handleVote]);
 
   const getTabHeaderDetails = () => {
     switch (currentTab) {
@@ -302,13 +440,6 @@ export default function App() {
           icon: <Receipt className="w-5 h-5 text-emerald-500 shrink-0" />,
           color: "bg-emerald-50/80 border-emerald-100 text-emerald-800"
         };
-      case "flashback":
-        return {
-          title: "WanderWay Wrapped",
-          tagline: "Celebrate your historical journeys, mileage achievements, and shared flashback memories.",
-          icon: <History className="w-5 h-5 text-indigo-500 shrink-0 animate-pulse" />,
-          color: "bg-indigo-50/80 border-indigo-100 text-indigo-800"
-        };
       default:
         return {
           title: "Wanderway Portal",
@@ -320,30 +451,47 @@ export default function App() {
   };
 
   const renderActiveTab = () => {
+    const noTripPlaceholder = (tab: "itinerary" | "map" | "collab" | "packing" | "documents" | "expenses") => (
+      <NewUserPlaceholder
+        tab={tab}
+        onStartPlanning={() => requestTabChange("planner")}
+        onGoDashboard={() => requestTabChange("dashboard")}
+      />
+    );
+
     switch (currentTab) {
       case "dashboard":
         return (
-          <Dashboard 
-            onPlanNewTrip={() => setCurrentTab("planner")} 
-            onViewItinerary={handleViewItinerary} 
+          <Dashboard
+            onPlanNewTrip={() => requestTabChange("planner")}
+            onViewItinerary={handleViewItinerary}
             tripsList={tripsList}
             currentUser={currentUser}
           />
         );
       case "planner":
-        return <PlannerFormView onItineraryGenerated={handleItineraryGenerated} />;
-      case "itinerary":
         return (
-          <ItineraryView 
-            itinerary={activeItinerary} 
-            onActivityVote={handleActivityVote} 
+          <PlannerFormView
+            onItineraryGenerated={handleItineraryGenerated}
+            onPlanningStatusChange={setIsPlanningInProgress}
+          />
+        );
+      case "itinerary":
+        if (!activeItinerary) return noTripPlaceholder("itinerary");
+        return (
+          <ItineraryView
+            itinerary={activeItinerary}
+            onActivityVote={handleActivityVote}
+            onItineraryUpdated={handleItineraryUpdated}
           />
         );
       case "map":
+        if (!activeItinerary) return noTripPlaceholder("map");
         return <MapView itinerary={activeItinerary} />;
       case "collab":
+        if (!activeItinerary) return noTripPlaceholder("collab");
         return (
-          <CollabView 
+          <CollabView
             currentUser={currentUser!}
             activeItinerary={activeItinerary}
             onlineUsers={onlineUsers}
@@ -353,24 +501,26 @@ export default function App() {
           />
         );
       case "packing":
+        if (!activeItinerary) return noTripPlaceholder("packing");
         return <PackingListView itinerary={activeItinerary} />;
       case "documents":
+        if (!activeItinerary?.id) return noTripPlaceholder("documents");
         return (
-          <DocumentsView 
-            tripId={activeItinerary.id || "hampi-heritage-trail"} 
-            currentUser={currentUser} 
+          <DocumentsView
+            tripId={activeItinerary.id}
+            itinerary={activeItinerary}
+            currentUser={currentUser}
             wsMessage={latestWsMessage}
           />
         );
       case "expenses":
+        if (!activeItinerary) return noTripPlaceholder("expenses");
         return <ExpensesView itinerary={activeItinerary} />;
-      case "flashback":
-        return <FlashbackView />;
       default:
         return (
-          <Dashboard 
-            onPlanNewTrip={() => setCurrentTab("planner")} 
-            onViewItinerary={handleViewItinerary} 
+          <Dashboard
+            onPlanNewTrip={() => requestTabChange("planner")}
+            onViewItinerary={handleViewItinerary}
             tripsList={tripsList}
             currentUser={currentUser}
           />
@@ -396,32 +546,32 @@ export default function App() {
   const tabHeader = getTabHeaderDetails();
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-[#FAFAF7] via-[#F4F7F5] to-[#EFF5FA] font-sans flex text-slate-800 relative overflow-x-hidden">
-      
+    <div className="min-h-screen bg-linear-to-tr from-[#FAFAF7] via-[#F4F7F5] to-[#EFF5FA] font-sans flex text-slate-800 relative overflow-x-hidden">
+
       {/* Decorative Elegant Soft Glow Orbs */}
       <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#E8A66B]/6 rounded-full blur-[140px] pointer-events-none"></div>
       <div className="absolute bottom-[-10%] left-[20%] w-[45%] h-[45%] bg-[#4FA8E0]/6 rounded-full blur-[140px] pointer-events-none"></div>
 
       {/* Sidebar - Desktop and Mobile adaptive navigation */}
-      <Sidebar 
-        currentTab={currentTab} 
-        setCurrentTab={setCurrentTab} 
-        onNewTripClick={handleNewTripClick} 
+      <Sidebar
+        currentTab={currentTab}
+        setCurrentTab={requestTabChange}
+        onNewTripClick={handleNewTripClick}
         currentUser={currentUser}
         onSignOut={handleSignOut}
       />
 
       {/* Main Panel Content Area */}
       <div className="flex-1 flex flex-col md:pl-64 min-w-0 pb-20 md:pb-6 relative z-10">
-        
+
         {/* Top Spacer block matching mobile top app bar */}
         <div className="h-16 md:hidden shrink-0"></div>
 
         {/* Redesigned Dynamic Content Container */}
-        <main className="flex-1 px-4 py-6 md:px-8 max-w-[1440px] mx-auto w-full space-y-6">
-          
+        <main className="flex-1 px-4 py-6 md:px-8 max-w-360 mx-auto w-full space-y-6">
+
           {/* Unified Premium Redesigned Page Header */}
-          <div className="bg-white/70 backdrop-blur-md rounded-[24px] border border-slate-200/80 p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in print:hidden">
+          <div className="bg-white/70 backdrop-blur-md rounded-3xl border border-slate-200/80 p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in print:hidden">
             <div className="flex items-start gap-3.5">
               <div className="w-11 h-11 rounded-2xl bg-white flex items-center justify-center border border-slate-200 shadow-xs shrink-0">
                 {tabHeader.icon}
@@ -445,16 +595,43 @@ export default function App() {
             <div className="flex flex-wrap items-center gap-2">
               <div className="bg-white/80 border border-slate-200/80 px-3 py-1.5 rounded-xl flex items-center gap-2 text-[11px] font-medium text-slate-600 shadow-3xs">
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                <span>Active: <strong className="font-bold text-slate-800">{activeItinerary?.destination || "Scenic"}</strong></span>
+                <span>
+                  Active: <strong className="font-bold text-slate-800">
+                    {activeItinerary
+                      ? activeItinerary.originLocation
+                        ? `${activeItinerary.originLocation} to ${activeItinerary.destination || "Destination"}`
+                        : activeItinerary.destination || "Trip selected"
+                      : "No trip selected"}
+                  </strong>
+                </span>
               </div>
               <div className="bg-emerald-50/80 border border-emerald-100 px-3 py-1.5 rounded-xl flex items-center gap-2 text-[11px] font-bold text-emerald-800 shadow-3xs">
                 <Users className="w-3.5 h-3.5 text-emerald-500" />
-                <span>{onlineUsers.length > 0 ? `${onlineUsers.length} active` : "Synced"}</span>
+                <span>{isReconnecting ? "Reconnecting..." : onlineUsers.length > 0 ? `${onlineUsers.length} active` : "Synced"}</span>
               </div>
             </div>
           </div>
 
           <div className="w-full">
+            <AnimatePresence>
+              {planningNotice && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  className="mb-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl px-4 py-3 flex items-start gap-3 shadow-sm print:hidden"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-display text-sm font-bold">Planning in progress</p>
+                    <p className="font-sans text-xs text-amber-800 mt-0.5">{planningNotice}</p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentTab}
@@ -475,7 +652,7 @@ export default function App() {
       <button
         id="floating-quick-notes-btn"
         onClick={() => setIsNotesOpen(true)}
-        className="fixed bottom-6 right-6 z-40 bg-gradient-to-tr from-[#3B7A57] to-[#4FA8E0] text-white p-3.5 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all cursor-pointer flex items-center justify-center group"
+        className="fixed bottom-6 right-6 z-40 bg-linear-to-tr from-[#3B7A57] to-[#4FA8E0] text-white p-3.5 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all cursor-pointer flex items-center justify-center group"
         title="Open Scratchpad"
       >
         <FileText className="w-5 h-5 text-white" />
@@ -487,9 +664,9 @@ export default function App() {
       {/* Global Quick Notes Slide-out Panel */}
       <AnimatePresence>
         {isNotesOpen && (
-          <QuickNotesPanel 
-            isOpen={isNotesOpen} 
-            onClose={() => setIsNotesOpen(false)} 
+          <QuickNotesPanel
+            isOpen={isNotesOpen}
+            onClose={() => setIsNotesOpen(false)}
           />
         )}
       </AnimatePresence>

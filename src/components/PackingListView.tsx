@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { 
-  CheckSquare, 
-  Square, 
-  Plus, 
-  RefreshCw, 
-  Sun, 
-  ShieldCheck, 
-  FileCheck, 
-  AlertCircle, 
-  Trash2, 
+import {
+  CheckSquare,
+  Square,
+  Plus,
+  RefreshCw,
+  Sun,
+  ShieldCheck,
+  FileCheck,
+  AlertCircle,
+  Trash2,
   Info,
   MapPin,
   Sparkles,
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { PackingItem, Itinerary } from "../types";
 import { INITIAL_PACKING_ITEMS } from "../data";
+import { callApi } from "../lib/callApi";
 
 interface PackingListViewProps {
   itinerary?: Itinerary;
@@ -31,9 +32,17 @@ interface EssentialRequirement {
 }
 
 export default function PackingListView({ itinerary }: PackingListViewProps) {
-  const tripId = itinerary?.id || "hampi-heritage-trail";
-  const destination = itinerary?.destination || "Hampi, Karnataka";
-  
+  if (!itinerary?.id) {
+    return null;
+  }
+
+  const tripId = itinerary.id;
+  const destination = itinerary.destination || "Destination";
+  const originLocation = itinerary.originLocation || "";
+  const routeLabel = originLocation ? `${originLocation} to ${destination}` : destination;
+  const travelMode = itinerary.travelMode || "mixed";
+  const [weatherSummary, setWeatherSummary] = useState("Checking latest forecast...");
+
   // Existing Packing Items State
   const [packingItems, setPackingItems] = useState<PackingItem[]>([]);
   const [newItemName, setNewItemName] = useState("");
@@ -54,134 +63,90 @@ export default function PackingListView({ itinerary }: PackingListViewProps) {
 
   // Load packing items and essentials from localStorage or seed
   useEffect(() => {
+    const packingKey = `wanderway_packing_${tripId}`;
+    const packingMetaKey = `wanderway_packing_meta_${tripId}`;
+    const essentialsKey = `wanderway_essentials_${tripId}`;
+    const essentialsMetaKey = `wanderway_essentials_meta_${tripId}`;
+    const routeKey = JSON.stringify({ originLocation, destination, travelMode });
+    const essentialsRouteKey = JSON.stringify({ originLocation, destination });
+
+    const defaultAIItems = (itinerary.packingList || []).map((item, index) => ({
+      id: `ai-pack-${index}`,
+      category: item.category as PackingItem["category"],
+      name: item.name,
+      description: item.reason,
+      checked: false
+    }));
+
     // 1. Existing general items
-    const savedPacking = localStorage.getItem(`wanderway_packing_${tripId}`);
-    if (savedPacking) {
+    const savedPacking = localStorage.getItem(packingKey);
+    const savedPackingMeta = localStorage.getItem(packingMetaKey);
+    if (savedPacking && savedPackingMeta === routeKey) {
       try {
-        setPackingItems(JSON.parse(savedPacking));
+        const parsed = JSON.parse(savedPacking);
+        setPackingItems(parsed.length > 0 ? parsed : defaultAIItems);
       } catch (e) {
-        setPackingItems(INITIAL_PACKING_ITEMS);
+        setPackingItems(defaultAIItems);
       }
     } else {
-      setPackingItems(INITIAL_PACKING_ITEMS);
+      setPackingItems(defaultAIItems);
+      localStorage.setItem(packingKey, JSON.stringify(defaultAIItems));
+      localStorage.setItem(packingMetaKey, routeKey);
     }
+
+    const defaultAIDocs = (itinerary.documentsList || []).map((doc, index) => ({
+      id: `ai-doc-${index}`,
+      name: doc.name,
+      description: doc.reason,
+      required: true,
+      checked: false,
+      type: "other" as const
+    }));
 
     // 2. Destination-specific essentials checklist
-    const savedEssentials = localStorage.getItem(`wanderway_essentials_${tripId}`);
-    if (savedEssentials) {
+    const savedEssentials = localStorage.getItem(essentialsKey);
+    const savedEssentialsMeta = localStorage.getItem(essentialsMetaKey);
+    if (savedEssentials && savedEssentialsMeta === essentialsRouteKey) {
       try {
-        setEssentials(JSON.parse(savedEssentials));
+        const parsed = JSON.parse(savedEssentials);
+        setEssentials(parsed.length > 0 ? parsed : defaultAIDocs);
       } catch (e) {
-        setEssentials(generateDefaultEssentials(destination));
+        setEssentials(defaultAIDocs);
       }
     } else {
-      const defaults = generateDefaultEssentials(destination);
-      setEssentials(defaults);
-      localStorage.setItem(`wanderway_essentials_${tripId}`, JSON.stringify(defaults));
+      setEssentials(defaultAIDocs);
+      localStorage.setItem(essentialsKey, JSON.stringify(defaultAIDocs));
+      localStorage.setItem(essentialsMetaKey, essentialsRouteKey);
     }
-  }, [tripId, destination]);
+  }, [tripId, destination, originLocation, travelMode, itinerary.packingList, itinerary.documentsList]);
 
-  // Helper to generate default mandatory items based on destination name
-  const generateDefaultEssentials = (dest: string): EssentialRequirement[] => {
-    const normalizedDest = dest.toLowerCase();
-    
-    // Check if it looks like an international trip (not Hampi / India)
-    const isInternational = !normalizedDest.includes("hampi") && 
-                             !normalizedDest.includes("karnataka") && 
-                             !normalizedDest.includes("india") && 
-                             !normalizedDest.includes("goa") && 
-                             !normalizedDest.includes("munnar") && 
-                             !normalizedDest.includes("kerala");
-
-    if (isInternational) {
-      return [
-        {
-          id: "essential-passport",
-          name: "Valid Passport",
-          description: "Must have at least 6 months validity from entry date and 2 blank pages.",
-          required: true,
-          checked: false,
-          type: "identity"
-        },
-        {
-          id: "essential-visa",
-          name: "Tourist Visa / Entry Authorization",
-          description: "Print copy of your approved eVisa, visa-on-arrival voucher, or waiver form.",
-          required: true,
-          checked: false,
-          type: "visa"
-        },
-        {
-          id: "essential-health",
-          name: "Vaccination & Health Record Certificate",
-          description: "Required vaccination records (e.g. Yellow Fever if arriving from endemic zones, or COVID certificates).",
-          required: true,
-          checked: false,
-          type: "health"
-        },
-        {
-          id: "essential-insurance",
-          name: "Comprehensive Travel Insurance",
-          description: "Keep digital and printed copy of policy coverage, emergency support numbers, and claim forms.",
-          required: false,
-          checked: false,
-          type: "other"
-        },
-        {
-          id: "essential-return",
-          name: "Proof of Onward/Return Flight",
-          description: "Immigration check often requires verification of pre-booked departure flights.",
-          required: true,
-          checked: false,
-          type: "visa"
-        },
-        {
-          id: "essential-currency",
-          name: "Local Currency Cash & Forex Card",
-          description: "Exchange some physical currency for small local stalls and confirm foreign transaction setup on cards.",
-          required: false,
-          checked: false,
-          type: "finance"
+  useEffect(() => {
+    let active = true;
+    async function fetchPackingWeather() {
+      try {
+        const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(destination)}&count=1&language=en&format=json`);
+        const geoData = await geoRes.json();
+        const location = geoData.results?.[0];
+        if (!location) throw new Error("location_not_found");
+        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto`);
+        const weatherData = await weatherRes.json();
+        const max = Math.round(weatherData.daily.temperature_2m_max[0]);
+        const min = Math.round(weatherData.daily.temperature_2m_min[0]);
+        const rain = weatherData.daily.precipitation_probability_max?.[0] || 0;
+        if (active) {
+          setWeatherSummary(`${min}-${max}C, ${rain}% rain chance`);
         }
-      ];
-    } else {
-      // Domestic / Indian local trip (e.g. Hampi, Goa)
-      return [
-        {
-          id: "essential-aadhaar",
-          name: "Aadhaar Card / Official National ID",
-          description: "Absolutely mandatory for checking into Indian resorts and monument ticket counters.",
-          required: true,
-          checked: false,
-          type: "identity"
-        },
-        {
-          id: "essential-upi",
-          name: "UPI Apps Active & Configured",
-          description: "GPay, PhonePe, or Paytm loaded. Set up offline backups as mobile network can be spotty around old ruins.",
-          required: false,
-          checked: false,
-          type: "finance"
-        },
-        {
-          id: "essential-sim",
-          name: "Physical Cash (Spares)",
-          description: "ATMs in Hampi are rare or frequently out of service. Keep physical cash in smaller bills for local rickshaws and coracle boats.",
-          required: true,
-          checked: false,
-          type: "finance"
-        },
-        {
-          id: "essential-ticket",
-          name: "Pre-booked ASI Monument Tickets",
-          description: "Avoid long physical queues at Vitthala Temple by booking online via ASI's official portal beforehand.",
-          required: false,
-          checked: false,
-          type: "visa"
-        }
-      ];
+      } catch {
+        if (active) setWeatherSummary("Forecast unavailable; pack flexible layers.");
+      }
     }
-  };
+    fetchPackingWeather();
+    return () => {
+      active = false;
+    };
+  }, [destination]);
+
+
 
   // Toggle general packing item
   const handleToggleItem = (itemId: string) => {
@@ -229,22 +194,17 @@ export default function PackingListView({ itinerary }: PackingListViewProps) {
 
       const existingItemNames = packingItems.map(item => item.name);
 
-      const response = await fetch("/api/packing/suggest", {
+      const data = await callApi<{ suggestions?: { name: string; category: PackingItem["category"]; description: string }[] }>("/api/packing/suggest", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           destination,
-          weather: "Sunny days with cool evening breezes",
+          originLocation: originLocation || undefined,
+          weather: weatherSummary,
+          travelMode,
           activityTypes: activityTypes.length > 0 ? activityTypes : ["culture", "nature", "activity"],
           existingItemNames
         })
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to load AI suggestions");
-      }
-
-      const data = await response.json();
       setAiSuggestions(data.suggestions || []);
     } catch (err: any) {
       console.error(err);
@@ -343,7 +303,7 @@ export default function PackingListView({ itinerary }: PackingListViewProps) {
 
   return (
     <div id="packing-screen" className="space-y-8 animate-fade-in print:hidden">
-      
+
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -351,7 +311,7 @@ export default function PackingListView({ itinerary }: PackingListViewProps) {
             Smart Packing List
           </h1>
           <p className="font-sans text-xs text-slate-500 mt-1">
-            AI-generated essentials checklist and mandatory destination clearances for <span className="font-bold text-emerald-600">{destination}</span>.
+            AI-generated essentials checklist and mandatory route clearances for <span className="font-bold text-emerald-600">{routeLabel}</span>.
           </p>
         </div>
 
@@ -371,7 +331,7 @@ export default function PackingListView({ itinerary }: PackingListViewProps) {
             Weather Forecast for {destination.split(",")[0]}
           </h3>
           <p className="font-sans text-xs text-white/90 leading-relaxed font-light">
-            Sunny days with cool evening breezes. Pack lightweight breathable cotton clothes, sun protection, and sturdy walking shoes for climbing rocky temple trails like Matanga Hill.
+            {weatherSummary}. Packing suggestions below adapt to the destination, activity mix, and preferred travel mode: {travelMode.replace("-", " ")}.
           </p>
         </div>
       </section>
@@ -423,11 +383,11 @@ export default function PackingListView({ itinerary }: PackingListViewProps) {
 
         {aiSuggestions.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {aiSuggestions.map((suggestion, index) => {
+            {aiSuggestions.map((suggestion) => {
               const isAdded = addedSuggestions.includes(suggestion.name);
               return (
-                <div 
-                  key={index}
+                <div
+                  key={suggestion.name}
                   className="p-4 rounded-2xl border border-violet-100 bg-violet-50/10 hover:bg-violet-50/20 transition-all flex items-start justify-between gap-3 select-none"
                 >
                   <div className="space-y-1">
@@ -447,11 +407,10 @@ export default function PackingListView({ itinerary }: PackingListViewProps) {
                   <button
                     onClick={() => handleAddSuggestionItem(suggestion.name, suggestion.category, suggestion.description)}
                     disabled={isAdded}
-                    className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
-                      isAdded 
-                        ? "bg-slate-100 border-slate-200 text-slate-400" 
-                        : "bg-white border-violet-200 text-violet-600 hover:bg-violet-50 hover:border-violet-300"
-                    }`}
+                    className={`p-1.5 rounded-lg border transition-all cursor-pointer ${isAdded
+                      ? "bg-slate-100 border-slate-200 text-slate-400"
+                      : "bg-white border-violet-200 text-violet-600 hover:bg-violet-50 hover:border-violet-300"
+                      }`}
                     title={isAdded ? "Added to packing list" : "Add to list"}
                   >
                     {isAdded ? (
@@ -479,7 +438,7 @@ export default function PackingListView({ itinerary }: PackingListViewProps) {
 
       {/* Feature 2: Destination Mandatory Essentials Checklist Component */}
       <section className="bg-gradient-to-br from-[#FAF8F5] to-white rounded-[24px] border-2 border-emerald-500/20 p-6 shadow-sm space-y-6">
-        
+
         {/* Header Block */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -495,7 +454,7 @@ export default function PackingListView({ itinerary }: PackingListViewProps) {
               </h2>
               <p className="font-sans text-[10px] text-slate-500 font-medium mt-0.5 flex items-center gap-1">
                 <MapPin className="w-3 h-3 text-slate-400" />
-                Required checklist for crossing borders, checking in, and avoiding travel penalties in {destination}.
+                Required checklist for crossing borders, checking in, and avoiding travel penalties for {routeLabel}.
               </p>
             </div>
           </div>
@@ -523,7 +482,7 @@ export default function PackingListView({ itinerary }: PackingListViewProps) {
             <span>{essentialsProgressPercent.toFixed(0)}% APPROVED</span>
           </div>
           <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-            <div 
+            <div
               className="h-full bg-gradient-to-r from-emerald-400 via-teal-500 to-[#3B7A57] transition-all duration-700"
               style={{ width: `${essentialsProgressPercent}%` }}
             ></div>
@@ -576,14 +535,13 @@ export default function PackingListView({ itinerary }: PackingListViewProps) {
         {/* Requirements grid list */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {essentials.map((ess) => (
-            <div 
+            <div
               key={ess.id}
               onClick={() => handleToggleEssential(ess.id)}
-              className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-start gap-3.5 group relative select-none ${
-                ess.checked 
-                  ? "bg-slate-50/50 border-slate-200/80" 
-                  : "bg-white border-slate-200 hover:border-emerald-400 hover:shadow-xs"
-              }`}
+              className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-start gap-3.5 group relative select-none ${ess.checked
+                ? "bg-slate-50/50 border-slate-200/80"
+                : "bg-white border-slate-200 hover:border-emerald-400 hover:shadow-xs"
+                }`}
             >
               {/* Checkbox state */}
               <div className="shrink-0 mt-0.5">
@@ -641,14 +599,14 @@ export default function PackingListView({ itinerary }: PackingListViewProps) {
 
       {/* Split grid of categories */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        
+
         {categories.map((cat) => {
           const catItems = packingItems.filter(item => item.category === cat);
           const progress = getCategoryProgress(cat);
 
           return (
             <div key={cat} className="bg-white rounded-[24px] border border-slate-200 p-6 shadow-sm space-y-4">
-              
+
               {/* Category Header with progress status */}
               <div className="flex justify-between items-baseline">
                 <h3 className="font-display font-bold text-base text-slate-900">
@@ -661,7 +619,7 @@ export default function PackingListView({ itinerary }: PackingListViewProps) {
 
               {/* Progress bar line */}
               <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-gradient-to-r from-[#4FA8E0] to-[#3ACBB8] transition-all duration-500"
                   style={{ width: `${progress.percentage}%` }}
                 ></div>
@@ -681,17 +639,15 @@ export default function PackingListView({ itinerary }: PackingListViewProps) {
                     ) : (
                       <Square className="w-5 h-5 text-slate-300 group-hover:text-slate-400 shrink-0 mt-0.5" />
                     )}
-                    
+
                     <div className="space-y-0.5 text-left">
-                      <span className={`font-sans text-xs font-semibold ${
-                        item.checked ? "text-slate-400 line-through" : "text-slate-700"
-                      }`}>
+                      <span className={`font-sans text-xs font-semibold ${item.checked ? "text-slate-400 line-through" : "text-slate-700"
+                        }`}>
                         {item.name}
                       </span>
                       {item.description && (
-                        <p className={`font-sans text-[10px] leading-relaxed ${
-                          item.checked ? "text-slate-300" : "text-slate-400"
-                        }`}>
+                        <p className={`font-sans text-[10px] leading-relaxed ${item.checked ? "text-slate-300" : "text-slate-400"
+                          }`}>
                           {item.description}
                         </p>
                       )}
@@ -713,7 +669,7 @@ export default function PackingListView({ itinerary }: PackingListViewProps) {
         </h3>
 
         <form onSubmit={handleAddItem} className="flex flex-col md:flex-row gap-4">
-          <input 
+          <input
             id="input-new-packing-item"
             type="text"
             required

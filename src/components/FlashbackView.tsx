@@ -2,6 +2,7 @@ import React from "react";
 import { Sparkles, Map, Award, Share2, Download, Flame, Compass } from "lucide-react";
 
 export default function FlashbackView() {
+  const currentYear = new Date().getFullYear();
   const stats = [
     { label: "Kilometers Traveled", value: "12,450 km", icon: Compass, color: "text-[#4FA8E0] bg-sky-50" },
     { label: "Unforgettable Trips", value: "8 Trips", icon: Map, color: "text-[#E8A66B] bg-orange-50" },
@@ -10,7 +11,7 @@ export default function FlashbackView() {
 
   return (
     <div id="flashback-screen" className="space-y-10 animate-fade-in max-w-4xl mx-auto">
-      
+
       {/* Title Header Section */}
       <section className="text-center space-y-2.5">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-50 text-[#E8A66B] text-xs font-bold uppercase tracking-wider">
@@ -18,7 +19,7 @@ export default function FlashbackView() {
           <span>Your Year in Travel</span>
         </div>
         <h1 className="font-display text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-          2023: A Year of Epic Discoveries
+          {currentYear}: A Year of Epic Discoveries
         </h1>
         <p className="font-sans text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
           You've scaled peaks, walked historic stone pathways, and watched sunsets over spectacular horizons. Here's your annual recap.
@@ -30,8 +31,8 @@ export default function FlashbackView() {
         {stats.map((stat, idx) => {
           const Icon = stat.icon;
           return (
-            <div 
-              key={idx} 
+            <div
+              key={idx}
               className="bg-white rounded-[24px] border border-slate-200 p-6 shadow-sm flex items-center gap-5 hover:shadow-md transition-shadow group cursor-default"
             >
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300 ${stat.color}`}>
@@ -67,7 +68,7 @@ export default function FlashbackView() {
           </div>
         </div>
 
-        <button 
+        <button
           onClick={() => alert("Reward claimed! Check your email coupon code.")}
           className="bg-white hover:bg-slate-50 text-slate-800 font-display font-bold text-xs px-5 py-3 rounded-xl shadow-sm cursor-pointer whitespace-nowrap border border-slate-200"
         >
@@ -78,18 +79,18 @@ export default function FlashbackView() {
       {/* Top Destinations Grid Bento box */}
       <section className="space-y-4">
         <h3 className="font-display font-bold text-base text-slate-900 px-1">
-          Your Top 2023 Destinations
+          Your Top {currentYear} Destinations
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
-          {/* #1 Favorite: Hampi */}
+
+          {/* #1 Favorite */}
           <div className="col-span-1 md:col-span-2 bg-white rounded-[24px] border border-slate-200 overflow-hidden shadow-sm flex flex-col group">
             <div className="h-56 relative overflow-hidden bg-slate-100">
-              <img 
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBg6jTgdTFRP_rwPKvaxTjw1oodBxPeupesWY2I2wIvHr-gqYMK96m_C9qunpT83wjePddcXd3ceL2uSvbyb5Nf02WnnKnKDmrBdXG3RggIRd7PwtivIsW2gb-DBG_MjB_2FvtGULY-s8aSzd4M2dzHUNjRuUtV7giH7D9zZhLmR6tpFWPdsAavPGarq2138Vfut0T9ulNug9zFcAe2XKQzbmjcI2Qz490jB1-8SBz_XubQxcYvHOEedEVpHvhaVSrbXTJYMcO8vcc" 
-                alt="Hampi India #1 Favorite" 
-                className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-700" 
+              <img
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBg6jTgdTFRP_rwPKvaxTjw1oodBxPeupesWY2I2wIvHr-gqYMK96m_C9qunpT83wjePddcXd3ceL2uSvbyb5Nf02WnnKnKDmrBdXG3RggIRd7PwtivIsW2gb-DBG_MjB_2FvtGULY-s8aSzd4M2dzHUNjRuUtV7giH7D9zZhLmR6tpFWPdsAavPGarq2138Vfut0T9ulNug9zFcAe2XKQzbmjcI2Qz490jB1-8SBz_XubQxcYvHOEedEVpHvhaVSrbXTJYMcO8vcc"
+                alt="Top destination"
+                className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-700"
               />
               <span className="absolute top-4 left-4 bg-amber-500 text-white font-display font-black text-xs px-3.5 py-1.5 rounded-full shadow-md uppercase tracking-wider">
                 👑 #1 Favorite
@@ -97,7 +98,7 @@ export default function FlashbackView() {
             </div>
             <div className="p-6 space-y-2">
               <h4 className="font-display font-bold text-base text-slate-900">
-                Hampi Heritage Trail, India
+                Heritage Trail, India
               </h4>
               <p className="font-sans text-xs text-slate-500 leading-relaxed">
                 An unforgettable dive into monolithic boulder hills, ancient stepped tanks, royal elephant stables, and river coracle crossings.
@@ -108,10 +109,10 @@ export default function FlashbackView() {
           {/* #2 Favorite: Kyoto */}
           <div className="col-span-1 bg-white rounded-[24px] border border-slate-200 overflow-hidden shadow-sm flex flex-col justify-between group">
             <div className="h-36 relative overflow-hidden bg-slate-100">
-              <img 
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYUUVfR9NEH2KcZ_PdQKAukV9-ijMMNFjxn-jGopMXErzvs7czIJ5eAz21q-Lu5XvSPjqR4keHcmCou4bZTLfAKQe_IFWJzfDc1blwlcFW-CR-WFxtFoVfGb7fjEtiQzTDj2iRPzZJjJxkSCtZQussnv7FXXCqiw1F5BieEAmOW8eOeclFO7o-i--EW24c77bx5M9I1mbUgYPsJJH_beU3_SANcAyzkSmOQC6sh-mtSx9lRQREFiD0EbYkuA8XO2NNY0prlZ1s0sw" 
-                alt="Kyoto bamboo forest" 
-                className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-700" 
+              <img
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYUUVfR9NEH2KcZ_PdQKAukV9-ijMMNFjxn-jGopMXErzvs7czIJ5eAz21q-Lu5XvSPjqR4keHcmCou4bZTLfAKQe_IFWJzfDc1blwlcFW-CR-WFxtFoVfGb7fjEtiQzTDj2iRPzZJjJxkSCtZQussnv7FXXCqiw1F5BieEAmOW8eOeclFO7o-i--EW24c77bx5M9I1mbUgYPsJJH_beU3_SANcAyzkSmOQC6sh-mtSx9lRQREFiD0EbYkuA8XO2NNY0prlZ1s0sw"
+                alt="Kyoto bamboo forest"
+                className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-700"
               />
               <span className="absolute top-3 left-3 bg-slate-800 text-white font-display font-bold text-[10px] px-2.5 py-1 rounded-full uppercase">
                 #2 Kyoto
@@ -140,7 +141,7 @@ export default function FlashbackView() {
           className="px-6 py-3.5 bg-gradient-to-r from-[#4FA8E0] to-[#3ACBB8] text-white rounded-xl font-display font-semibold text-xs shadow-md shadow-sky-50 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
         >
           <Share2 className="w-4.5 h-4.5 text-white" />
-          <span>Share 2023 Wrapped</span>
+          <span>Share {currentYear} Wrapped</span>
         </button>
 
         <button

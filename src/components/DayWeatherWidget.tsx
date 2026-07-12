@@ -38,11 +38,11 @@ const WEATHER_CODE_MAP: Record<number, { label: string; icon: React.ReactNode; b
 };
 
 const getCodeMeta = (code: number) => {
-  return WEATHER_CODE_MAP[code] || { 
-    label: "Cloudy", 
-    icon: <Cloud className="w-4 h-4 text-slate-400" />, 
-    bg: "bg-slate-50/60 border-slate-100", 
-    text: "text-slate-700" 
+  return WEATHER_CODE_MAP[code] || {
+    label: "Cloudy",
+    icon: <Cloud className="w-4 h-4 text-slate-400" />,
+    bg: "bg-slate-50/60 border-slate-100",
+    text: "text-slate-700"
   };
 };
 
@@ -56,28 +56,19 @@ export default function DayWeatherWidget({ destination, dayIndex }: DayWeatherWi
     async function fetchDailyWeather() {
       try {
         setLoading(true);
-        
+
         // 1. Resolve coordinates
         const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(destination)}&count=1&language=en&format=json`;
         const geoRes = await fetch(geoUrl);
         const geoData = await geoRes.json();
 
-        let lat = 15.335; // Hampi Default
-        let lon = 76.462;
-
-        if (geoData.results && geoData.results.length > 0) {
-          lat = geoData.results[0].latitude;
-          lon = geoData.results[0].longitude;
-        } else {
-          const lowerDest = destination.toLowerCase();
-          if (lowerDest.includes("goa")) {
-            lat = 15.299; lon = 74.124;
-          } else if (lowerDest.includes("swiss") || lowerDest.includes("alps")) {
-            lat = 46.818; lon = 8.227;
-          } else if (lowerDest.includes("kyoto")) {
-            lat = 35.011; lon = 135.768;
-          }
+        if (!geoData.results || geoData.results.length === 0) {
+          setWeather(null);
+          return;
         }
+
+        const lat = geoData.results[0].latitude;
+        const lon = geoData.results[0].longitude;
 
         // 2. Fetch up to 7-day weather forecast
         const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto`;

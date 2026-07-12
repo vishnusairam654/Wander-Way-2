@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { 
-  Image as ImageIcon, 
-  Pin, 
-  Trash2, 
-  Plus, 
+import {
+  Image as ImageIcon,
+  Pin,
+  Trash2,
+  Plus,
   Compass,
   Check,
   UploadCloud
@@ -21,44 +21,7 @@ interface MemoryItem {
   isUploaded?: boolean;
 }
 
-const INITIAL_MEMORIES: MemoryItem[] = [
-  {
-    id: "mem-1",
-    title: "Golden Hour at Stone Chariot",
-    category: "Architecture",
-    description: "Photorealistic view of Hampi's famous monolithic Stone Chariot radiating with golden morning sun beams.",
-    imageUrl: "https://images.unsplash.com/photo-1600100397608-f010e461972b?q=80&w=600&auto=format&fit=crop",
-    isPinned: true,
-    dateGenerated: "Oct 10, 2023"
-  },
-  {
-    id: "mem-2",
-    title: "Sanapur Lake Coracle Adventure",
-    category: "Landscape",
-    description: "Deep blue reservoirs, smooth giant boulders, and a traveler floating peacefully in a round woven coracle boat.",
-    imageUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=600&auto=format&fit=crop",
-    isPinned: true,
-    dateGenerated: "Oct 11, 2023"
-  },
-  {
-    id: "mem-3",
-    title: "Matanga Hill Dawn View",
-    category: "Aerial",
-    description: "Panoramic ruins of the Vijayanagara Empire peeking through thick morning clouds and mist.",
-    imageUrl: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=600&auto=format&fit=crop",
-    isPinned: false,
-    dateGenerated: "Oct 12, 2023"
-  },
-  {
-    id: "mem-4",
-    title: "Lotus Mahal Architectural Study",
-    category: "Palace",
-    description: "Detailed rendering of Hampi's multi-layered archways and beautiful plaster carvings under a pink twilight sky.",
-    imageUrl: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?q=80&w=600&auto=format&fit=crop",
-    isPinned: false,
-    dateGenerated: "Oct 13, 2023"
-  }
-];
+const INITIAL_MEMORIES: MemoryItem[] = [];
 
 export default function TripMemoriesGallery() {
   const [memories, setMemories] = useState<MemoryItem[]>(() => {
@@ -87,7 +50,7 @@ export default function TripMemoriesGallery() {
   }, [memories]);
 
   const togglePin = (id: string) => {
-    setMemories(prev => 
+    setMemories(prev =>
       prev.map(mem => mem.id === id ? { ...mem, isPinned: !mem.isPinned } : mem)
     );
     showToast("Memory board updated!");
@@ -110,10 +73,9 @@ export default function TripMemoriesGallery() {
       showToast("❌ Please select a valid image file.");
       return;
     }
-    
-    // Warn/limit if image is exceptionally large (standard threshold to keep base64 localStorage storage efficient)
+
     if (file.size > 3 * 1024 * 1024) {
-      showToast("⚠️ Image is large. Optimizing file upload...");
+      showToast("⚠️ Image is large. Upload may take longer.");
     }
 
     const reader = new FileReader();
@@ -165,7 +127,7 @@ export default function TripMemoriesGallery() {
 
   return (
     <div id="trip-memories-gallery" className="bg-white rounded-[24px] border border-slate-200 p-6 shadow-sm space-y-6 font-sans">
-      
+
       {/* Toast Alert */}
       {toastMessage && (
         <div className="fixed bottom-6 left-6 z-50 bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 border border-slate-800 animate-bounce">
@@ -193,21 +155,19 @@ export default function TripMemoriesGallery() {
         <div className="flex items-center gap-2 self-start md:self-center shrink-0">
           <button
             onClick={() => setActiveFilter("all")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
-              activeFilter === "all"
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${activeFilter === "all"
                 ? "bg-slate-950 text-white border-slate-950 shadow-sm"
                 : "bg-white text-slate-500 hover:bg-slate-50 border-slate-200"
-            }`}
+              }`}
           >
             All Memories
           </button>
           <button
             onClick={() => setActiveFilter("pinned")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border flex items-center gap-1.5 ${
-              activeFilter === "pinned"
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border flex items-center gap-1.5 ${activeFilter === "pinned"
                 ? "bg-amber-500 text-white border-amber-500 shadow-sm"
                 : "bg-white text-slate-500 hover:bg-slate-50 border-slate-200"
-            }`}
+              }`}
           >
             <Pin className="w-3.5 h-3.5 fill-current" />
             <span>Pinned Board ({memories.filter(m => m.isPinned).length})</span>
@@ -217,7 +177,7 @@ export default function TripMemoriesGallery() {
 
       {/* Primary Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Left column: User Device Image Uploader */}
         <div className="lg:col-span-1 bg-slate-50/50 rounded-2xl border border-slate-200/60 p-5 space-y-4 self-start">
           <div className="flex items-center gap-2 text-indigo-700">
@@ -236,7 +196,7 @@ export default function TripMemoriesGallery() {
                 type="text"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                placeholder="e.g. Beautiful Sunset in Hampi"
+                placeholder="e.g. Sunset Over The Old Town"
                 required
                 className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all font-sans"
               />
@@ -291,13 +251,12 @@ export default function TripMemoriesGallery() {
                   }
                 }}
                 onClick={() => document.getElementById("device-image-input")?.click()}
-                className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 min-h-[120px] ${
-                  isDragOver
+                className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 min-h-[120px] ${isDragOver
                     ? "border-indigo-500 bg-indigo-50/50"
                     : uploadedImage
-                    ? "border-emerald-400 bg-emerald-50/10"
-                    : "border-slate-200 hover:border-indigo-300 hover:bg-slate-100/50"
-                }`}
+                      ? "border-emerald-400 bg-emerald-50/10"
+                      : "border-slate-200 hover:border-indigo-300 hover:bg-slate-100/50"
+                  }`}
               >
                 <input
                   type="file"
@@ -310,7 +269,7 @@ export default function TripMemoriesGallery() {
                     }
                   }}
                 />
-                
+
                 {uploadedImage ? (
                   <div className="relative w-full h-24 rounded-lg overflow-hidden flex items-center justify-center bg-slate-100">
                     <img
@@ -373,7 +332,7 @@ export default function TripMemoriesGallery() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {filteredMemories.map((mem) => (
-                <div 
+                <div
                   key={mem.id}
                   className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col group relative"
                 >
@@ -386,11 +345,10 @@ export default function TripMemoriesGallery() {
                   <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => togglePin(mem.id)}
-                      className={`p-1.5 rounded-full backdrop-blur-xs shadow-sm transition-all border cursor-pointer ${
-                        mem.isPinned 
-                          ? "bg-amber-500 text-white border-amber-600 hover:bg-amber-600" 
+                      className={`p-1.5 rounded-full backdrop-blur-xs shadow-sm transition-all border cursor-pointer ${mem.isPinned
+                          ? "bg-amber-500 text-white border-amber-600 hover:bg-amber-600"
                           : "bg-black/40 text-white border-white/10 hover:bg-black/60"
-                      }`}
+                        }`}
                       title={mem.isPinned ? "Unpin from memory board" : "Pin to board"}
                     >
                       <Pin className={`w-3.5 h-3.5 ${mem.isPinned ? "fill-white" : ""}`} />
@@ -419,7 +377,7 @@ export default function TripMemoriesGallery() {
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold">
                         <span>{mem.isUploaded ? "USER UPLOADED" : "SHARED HIGHLIGHT"}</span>
-                        <span>{mem.dateGenerated || "Oct 12, 2023"}</span>
+                        <span>{mem.dateGenerated || new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                       </div>
                       <h4 className="font-display font-bold text-sm text-slate-900 leading-tight">
                         {mem.title}
